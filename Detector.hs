@@ -19,5 +19,5 @@ detectImage classifier image =
         squaredInt = computeIntegralImage image (^2)
     in map wRect $ filter (classifier `check`) (windowsPos int squaredInt)
 
-loadClassifier :: String -> IO (StrongClassifier HaarClassifier)
+loadClassifier :: FilePath -> IO (StrongClassifier HaarClassifier)
 loadClassifier path = fmap read $ readFile path
