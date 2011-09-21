@@ -8,7 +8,6 @@ module Window (
 ) where
 
 import Data.Int
-import Debug.Trace
 import Data.Word
 
 import qualified IntegralImage as II
@@ -29,7 +28,7 @@ windowHeight = 24
 win rect@(Rect x y w h) integral squaredIntegral =
     Win rect integral deriv avg
   where
-    deriv = trace ("Deriv: "++ show (sqrt $ (squaresSum / n) - avg^2)) (sqrt $ (squaresSum / n) - avg^2)
+    deriv = sqrt $ (squaresSum / n) - avg^2
     n = double w * double h
     valuesSum = double $ sumRectangle integral
     avg = valuesSum / n
@@ -71,10 +70,10 @@ getValue (Win (Rect winX winY w h) image _ _) x y =
     ratio s = s * int windowWidth * int windowHeight `div` int w `div` int h
     
 -- | Sum normalized by the window's standard derivation
-normalizeSum (Win (Rect winX winY w h) image _ _) s =
+normalizeSum (Win _ _ deriv avg) n s =
     n * (round $ normalize (double s / double n))
   where
-   -- Pixel's value normalized with the double of the standard derivation
+    -- Pixel's value normalized with the double of the standard derivation
     -- (95% of pixels values), average around 127
     normalize p = (p - (avg - 2*deriv)) * (255 / (4*deriv))
 

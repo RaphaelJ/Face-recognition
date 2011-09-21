@@ -34,8 +34,9 @@ compute (TwoVertRect (Rect x y w h)) win =
         d = W.getValue win (x+w) (y+h')
         e = W.getValue win x (y+h)
         f = W.getValue win (x+w) (y+h)
-        s1 = d + a - b - c
-        s2 = f + c - d - e
+        normalize = W.normalizeSum win (int w * int h)
+        s1 = normalize $ d + a - b - c
+        s2 = normalize $ f + c - d - e
     in s2 - s1
     
 compute (TwoHorizRect (Rect x y w h)) win =
@@ -51,8 +52,9 @@ compute (TwoHorizRect (Rect x y w h)) win =
         d = W.getValue win x (y+h)
         e = W.getValue win (x+w') (y+h)
         f = W.getValue win (x+w) (y+h)
-        s1 = e + a - b - d
-        s2 = f + b - c - e
+        normalize = W.normalizeSum win (int w * int h)
+        s1 = normalize $ e + a - b - d
+        s2 = normalize $ f + b - c - e
     in s2 - s1
 
 compute (ThreeVertRect (Rect x y w h)) win =
@@ -68,7 +70,7 @@ compute (ThreeVertRect (Rect x y w h)) win =
     -- -         -
     -- -   S3    -
     -- -         -
-    -- g ------- h
+    -- g ------- h''
     let h' = h `div` 3
         a = W.getValue win x y
         b = W.getValue win (x+w) y
@@ -78,9 +80,10 @@ compute (ThreeVertRect (Rect x y w h)) win =
         f = W.getValue win (x+w) (y+h'+h')
         g = W.getValue win x (y+h)
         h'' = W.getValue win (x+w) (y+h)
-        s1 = d + a - b - c
-        s2 = f + c - d - e
-        s3 = h'' + e - f - g
+        normalize = W.normalizeSum win (int w * int h)
+        s1 = normalize $ d + a - b - c
+        s2 = normalize $ f + c - d - e
+        s3 = normalize $ h'' + e - f - g
     in s1 + s3 - s2
         
 compute (ThreeHorizRect (Rect x y w h)) win =
@@ -88,7 +91,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
     -- -         -         -         -
     -- -   S1    -   S2    -   S3    -
     -- -         -         -         -
-    -- e ------- f ------- g ------- h
+    -- e ------- f ------- g ------- h''
     let w' = w `div` 3
         a = W.getValue win x y
         b = W.getValue win (x+w') y
@@ -98,9 +101,10 @@ compute (ThreeHorizRect (Rect x y w h)) win =
         f = W.getValue win (x+w') (y+h)
         g = W.getValue win (x+w'+w') (y+h)
         h'' = W.getValue win (x+w) (y+h)
-        s1 = f + a - b - e
-        s2 = g + b - c - f
-        s3 = h'' + c - d - g
+        normalize = W.normalizeSum win (int w * int h)
+        s1 = normalize $ f + a - b - e
+        s2 = normalize $ g + b - c - f
+        s3 = normalize $ h'' + c - d - g
     in s1 + s3 - s2
     
 compute (FourRect (Rect x y w h)) win =
@@ -112,7 +116,7 @@ compute (FourRect (Rect x y w h)) win =
     -- -         -         -
     -- -   S3    -    S4   -
     -- -         -         -
-    -- g ------- h ------- i
+    -- g ------ h'' ------ i
     let w' = w `div` 2
         h' = h `div` 2
         a = W.getValue win x y
@@ -124,12 +128,12 @@ compute (FourRect (Rect x y w h)) win =
         g = W.getValue win x (y+h)
         h'' = W.getValue win (x+w') (y+h)
         i = W.getValue win (x+w) (y+h)
-        s1 = e + a - b - d
-        s2 = f + b - c - d
-        s3 = h'' + d - e - g
-        s4 = i + e - f - h''
+        normalize = W.normalizeSum win (int w * int h)
+        s1 = normalize $ e + a - b - d
+        s2 = normalize $ f + b - c - d
+        s3 = normalize $ h'' + d - e - g
+        s4 = normalize $ i + e - f - h''
     in s1 + s4 - s2 - s3
-
 
 -- | List all features inside a standard window.
 features =
@@ -138,3 +142,6 @@ features =
     map ThreeVertRect (W.featuresPos 1 3) ++
     map ThreeHorizRect (W.featuresPos 3 1) ++
     map FourRect (W.featuresPos 2 2)
+
+int :: (Integral a) => a -> Int64
+int = fromIntegral
