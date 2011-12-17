@@ -1,1 +1,7 @@
-*~ *.o *.hi test* Main Detector
+*~
+*.o
+*.hi
+test*
+Main
+Detector
+Rotation
