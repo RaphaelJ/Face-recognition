@@ -1,9 +1,9 @@
 module Primitives (
       Point (..), Size (..), Rect (..)
-) where
+    ) where
 
+import Data.Ix
 import Data.Word
-import Ix
 
 data Point = Point { pX :: Word16, pY :: Word16 }
     deriving (Show, Read, Eq, Ord)
@@ -17,6 +17,9 @@ instance Ix Point where
         
     inRange (Point x1 y1, Point x2 y2) (Point x y) =
         inRange ((x1, y1), (x2, y2)) (x, y)
+
+    rangeSize (Point x1 y1, Point x2 y2) =
+        rangeSize ((x1, y1), (x2, y2))
 
 data Size = Size { sWidth :: Word16, sHeight :: Word16 }
     deriving (Show, Read, Eq)

@@ -46,9 +46,9 @@ load path size = do
                         (w, h) <- GD.imageSize image
                         
                         if w > h && w > maxSize then do
-                            GD.resizeImage maxSize (h * maxSize `div` w) image
+                            GD.resizeImage maxSize (h * maxSize `quot` w) image
                         else if h > maxSize then do
-                            GD.resizeImage (w * maxSize `div` h) maxSize image
+                            GD.resizeImage (w * maxSize `quot` h) maxSize image
                         else return image
                     Nothing -> return image
                     

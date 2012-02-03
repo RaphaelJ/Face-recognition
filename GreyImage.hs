@@ -50,7 +50,7 @@ fromRgb image = listArray (A.bounds image) $ map pixToGrey $ A.elems image
         let r = (fromIntegral $ RGB.red pix) * 30
             g = (fromIntegral $ RGB.green pix) * 59
             b = (fromIntegral $ RGB.blue pix) * 11
-        in fromIntegral $ (r + g + b) `div` 100
+        in fromIntegral $ (r + g + b) `quot` 100
 
 -- | Create a RGB image from an grey image
 toRgb :: GreyImage -> RGB.Image

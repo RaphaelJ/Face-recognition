@@ -2,7 +2,7 @@
 
 module HaarClassifier(
       HaarClassifier (..)
-) where
+    ) where
 
 import Data.Int
 
@@ -11,15 +11,18 @@ import HaarFeatures (HaarFeature, compute)
 import qualified IntegralImage as II
 import Window (Win)
 
--- | 'Classifier' using a pseudo-haar feature to check an object
+-- | Weak Haar\'s 'Classifier' using a <feature to check an object.
 data HaarClassifier = HaarClassifier {
       hcFeature :: HaarFeature
     , hcThreshold :: Int64
     , hcParity :: Bool -- ^ True -> higher/equal threshold, False -> lower.
     } deriving (Show, Read)
 
+-- | The 'HaarClassifier' is able to classify a part of an image using its
+-- iteration window.
 instance Classifier HaarClassifier Win where
     (HaarClassifier feature thres parity) `check` window =
         let val = compute feature window
-        in if parity then val >= thres
-                     else val < thres
+        in if parity
+              then val >= thres
+              else val < thres

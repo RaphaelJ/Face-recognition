@@ -1,7 +1,7 @@
 module HaarFeatures (
       HaarFeature (..)
     , compute, features
-) where
+    ) where
 
 import Data.Int
     
@@ -27,7 +27,7 @@ compute (TwoVertRect (Rect x y w h)) win =
     -- -   S2    -
     -- -         -
     -- e ------- f
-    let h' = h `div` 2
+    let h' = h `quot` 2
         a = W.getValue win x y
         b = W.getValue win (x+w) y
         c = W.getValue win x (y+h')
@@ -45,7 +45,7 @@ compute (TwoHorizRect (Rect x y w h)) win =
     -- -   S1    -   S2    -
     -- -         -         -
     -- d ------- e ------- f
-    let w' = w `div` 2
+    let w' = w `quot` 2
         a = W.getValue win x y
         b = W.getValue win (x+w') y
         c = W.getValue win (x+w) y
@@ -71,7 +71,7 @@ compute (ThreeVertRect (Rect x y w h)) win =
     -- -   S3    -
     -- -         -
     -- g ------- h''
-    let h' = h `div` 3
+    let h' = h `quot` 3
         a = W.getValue win x y
         b = W.getValue win (x+w) y
         c = W.getValue win x (y+h')
@@ -92,7 +92,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
     -- -   S1    -   S2    -   S3    -
     -- -         -         -         -
     -- e ------- f ------- g ------- h''
-    let w' = w `div` 3
+    let w' = w `quot` 3
         a = W.getValue win x y
         b = W.getValue win (x+w') y
         c = W.getValue win (x+w'+w') y
@@ -117,8 +117,8 @@ compute (FourRect (Rect x y w h)) win =
     -- -   S3    -    S4   -
     -- -         -         -
     -- g ------ h'' ------ i
-    let w' = w `div` 2
-        h' = h `div` 2
+    let w' = w `quot` 2
+        h' = h `quot` 2
         a = W.getValue win x y
         b = W.getValue win (x+w') y
         c = W.getValue win (x+w) y
