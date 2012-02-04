@@ -1,7 +1,9 @@
 module IntegralImage (
+    -- * Type
       IntegralImage
+    -- * Functions
     , computeIntegralImage, getValue, imageSize
-) where
+    ) where
     
 import Control.Monad
 import Control.Monad.ST
@@ -16,6 +18,7 @@ import GreyImage (GreyImage, getPixel)
 
 type IntegralImage = UArray Point Int64
 
+-- | Computes an 'IntegralImage' using a transformation function on each pixel.
 computeIntegralImage :: GreyImage -> (Int64 -> Int64) -> IntegralImage
 computeIntegralImage image f =
     runSTUArray computeIntegralImage'
@@ -39,11 +42,13 @@ computeIntegralImage image f =
         
         return integral
 
+-- | Gets the value of a point inside an 'IntegralImage'. A value with x or y
+-- equals to 0 will ever be 0.
 getValue :: IntegralImage -> Word16 -> Word16 -> Int64
 getValue image x y | x == 0 || y == 0 = 0
                    | otherwise        = image ! Point (x-1) (y-1)
 
--- | Gives the original image's size
+-- | Gives the original image's size.
 imageSize :: IntegralImage -> Size
 imageSize image =
     let Point w h = snd $ bounds $ image

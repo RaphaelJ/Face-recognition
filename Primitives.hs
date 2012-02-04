@@ -1,4 +1,5 @@
 module Primitives (
+    -- * Types & constructors
       Point (..), Size (..), Rect (..)
     ) where
 

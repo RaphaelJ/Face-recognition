@@ -1,5 +1,7 @@
 module Image (
-      Image, Pixel (..)
+    -- * Types & constructors
+      Image, Pixel (..) 
+    -- * Functions
     , load, save, getPixel, getSize
 ) where
 
@@ -16,18 +18,18 @@ import Primitives
 type Image = Array Point Pixel
 data Pixel = Pixel {
       red :: Word8, green :: Word8, blue :: Word8
-} deriving (Eq, Show)
+    s} deriving (Eq, Show)
 
--- Max image width or height (resize before processing)
+-- Max image width or height (resize before processing).
 maxImageSize = Just 320
 
--- | Load an image at system path and detect image's type.
+-- | Loads an image at system path and detects image's type.
 -- The second parameter resize the image before processing.
 load :: FilePath -> Maybe Size -> IO Image
 load path size = do
     GD.withImage openImage $ \image -> 
-        GD.withImage (resizeImage image) $ \image ->
-            imageToArray image
+        GD.withImage (resizeImage image) $ \image' ->
+            imageToArray image'
   where
     openImage =
         case takeExtension path of
