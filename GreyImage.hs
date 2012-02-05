@@ -1,10 +1,19 @@
 module GreyImage (
+    -- * Types & constructors
       GreyImage, Pixel (..)
-    , load, save, getPixel, drawRectangle, fromRgb, toRgb
-) where
+    -- * Filesystem images manipulations
+    , load, save
+    -- * Transforms between grey and RGB images
+    , fromRgb, toRgb
+    -- * Functions
+    , getPixel, drawRectangle
+    ) where
 
-import qualified Data.Array as A (listArray, bounds, elems)
+import Control.Monad
+import qualified Data.Array as A (bounds, elems)
 import Data.Array.Unboxed (UArray, listArray, (!), bounds, elems, accum)
+import Data.Array.ST (runSTArray)
+import Data.MArray (thaw, readArray, writeArray)
 import Data.Ix
 import Data.Word
 
@@ -14,45 +23,49 @@ import qualified Image as RGB (Image, Pixel (..), load, save)
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
 
--- | Load an image as grey at system path and detect image's type
+-- | Loads an image as grey at system path and detects image\'s type.
 load :: FilePath -> Maybe Size -> IO GreyImage
-load path size = fmap fromRgb $ RGB.load path size
+load path size = fromRgb `fmap` RGB.load path size
 
--- | Save an grey image
+-- | Saves an grey image.
 save :: FilePath -> GreyImage -> IO ()
 save path = RGB.save path . toRgb
 
--- | Get a pixel at (x, y)
+-- | Gets a pixel at (x, y).
 getPixel :: GreyImage -> Point -> Pixel
 getPixel image coord = image ! coord
 
--- | Draw a rectangle inside the image using two modification functions
+-- | Draws a rectangle inside the image using two transformation functions.
 drawRectangle :: GreyImage
               -> (Pixel -> Pixel) -- ^ Border transformation
               -> (Pixel -> Pixel) -- ^ Background transformation
               -> Rect -> GreyImage
-drawRectangle image border back (Rect x y w h) =
-    let borderCoords = [] {-range (Point x y, Point (x+w) y) -- Top
-                    ++ range (Point x (y+h), Point (x+w) (y+h)) -- Bottom
-                    ++ range (Point x (y+1), Point x (y+h-1)) -- Left
-                    ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
-        backCoords = range (Point (x+1) (y+1), Point (x+w-1) (y+h-1))
-        tranform f cs img = accum (fAccum f) img $ map (\c -> (c, ())) cs
-        fAccum f pix _ = f pix
-    in tranform border borderCoords $ tranform back backCoords image
+drawRectangle image back border (Rect x y w h) =
+    -- Copies into a ST Array, apply transforms and freeze
+    runSTArray $
+        thaw image >>= trans backCoords back >>= trans borderCoords border
+  where
+    borderCoords = [] {-range (Point x y, Point (x+w) y) -- Top
+                ++ range (Point x (y+h), Point (x+w) (y+h)) -- Bottom
+                ++ range (Point x (y+1), Point x (y+h-1)) -- Left
+                ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
+    backCoords = range (Point (x+1) (y+1), Point (x+w-2) (y+h-2))
+    trans cs f img =
+        forM_ cs $ \c -> do
+            readArray img c >>= writeArray img c
 
--- | Create an grey image from an RGB image
+-- | Creates a grey image from an RGB image.
 fromRgb :: RGB.Image -> GreyImage
 fromRgb image = listArray (A.bounds image) $ map pixToGrey $ A.elems image
   where
     pixToGrey pix =
-        -- Use eye perception of colors
+        -- Uses eye perception of colors
         let r = (fromIntegral $ RGB.red pix) * 30
             g = (fromIntegral $ RGB.green pix) * 59
             b = (fromIntegral $ RGB.blue pix) * 11
-        in fromIntegral $ (r + g + b) `quot` 100
+        in fromIntegral $ (r + g + b) `quot` (100 :: Int)
 
--- | Create a RGB image from an grey image
+-- | Creates a RGB image from an grey image.
 toRgb :: GreyImage -> RGB.Image
 toRgb image = listArray (bounds image) $ map pixToRGB $ elems image
   where

@@ -3,8 +3,10 @@
 module Trainer(
     -- * Types & constructors
       TrainingImage (..)
-    -- * Functions
-    , train, selectHaarClassifier
+    -- * Weak classifier selector
+    , selectHaarClassifier
+    -- * Impure utilities
+    , train
     ) where
 
 import Control.Parallel.Strategies
@@ -111,7 +113,7 @@ selectHaarClassifier tests =
     -- Sums the weight of all valid tests.
     weightValid = sum $ map snd $ filter (isValid . fst) tests
 
--- | Computes all feature's values with a set of tests, sorted.
+-- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
 featureValuesSorted :: HaarFeature -> [(TrainingImage, Weight)]
                        -> [(Int64, Weight)]

@@ -48,7 +48,7 @@ getValue :: IntegralImage -> Word16 -> Word16 -> Int64
 getValue image x y | x == 0 || y == 0 = 0
                    | otherwise        = image ! Point (x-1) (y-1)
 
--- | Gives the original image's size.
+-- | Gives the original image\'s size.
 imageSize :: IntegralImage -> Size
 imageSize image =
     let Point w h = snd $ bounds $ image

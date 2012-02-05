@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module HaarClassifier(
+    -- * Types & constructors
       HaarClassifier (..)
     ) where
 
@@ -8,10 +9,9 @@ import Data.Int
 
 import AdaBoost (Classifier (..))
 import HaarFeatures (HaarFeature, compute)
-import qualified IntegralImage as II
 import Window (Win)
 
--- | Weak Haar\'s 'Classifier' using a <feature to check an object.
+-- | Weak Haar\'s 'Classifier' using a 'HaarFeature' to check an object.
 data HaarClassifier = HaarClassifier {
       hcFeature :: HaarFeature
     , hcThreshold :: Int64

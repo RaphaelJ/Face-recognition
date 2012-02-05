@@ -8,7 +8,7 @@ module AdaBoost (
     , Weight, StrongClassifier (..)
     -- * Algorithm
     , adaBoost
-) where
+    ) where
 
 import Data.Function
 import Data.List
@@ -17,13 +17,13 @@ import Debug.Trace
 
 type Weight = Double
 
--- | Represents an instance of a testable item (image ...) with its classes type
--- (Bool for binary classes, Int for many classes, ...)
+-- | Represents an instance of a testable item (image ...) with its classes\'
+-- type (Bool for binary classes, Int for many classes, ...).
 class Eq c => TrainingTest t c where
-    tClass :: t -> c -- Give the class of the test
+    tClass :: t -> c -- ^ Gives the class value of the test
 
 -- | Represents an instance of a classifier able to classify a type of tests
--- for a class of items
+-- for a class of items.
 class (Show cl, Read cl, Eq c) => Classifier cl t c where
     cClass :: cl -> t -> c -- Infers the class of the test using the classifier
 
@@ -33,23 +33,23 @@ data StrongClassifier a = StrongClassifier {
       scClassifiers :: [WeakClassifier a]
     } deriving (Show, Read)
 
--- | A 'WeakClassifier' contain a classifier with an associed weight.
+-- | A 'WeakClassifier' contains a classifier with an associed weight.
 data WeakClassifier a = WeakClassifier {
       wcClassifier :: a
     , wcWeight :: Weight
     } deriving (Show, Read)
     
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
--- 'WeakClassifier' is itself a instance of 'Classifier'.
+-- 'WeakClassifier' is itself an instance of 'Classifier'.
 -- The class's type must be an instance of 'Ord' for fast seeking using 'Map'
 -- The 'StrongClassifier' gives the class with the strongest score.
 instance (Classifier weak t c, Ord c)
          => Classifier (StrongClassifier weak) t c where
-    cClass (StrongClassifier cs) test = head $ map fst $ sortedClasses
+    cClass (StrongClassifier cs) test =
+        fst $ maximumBy (compare `on` snd) classesScores
       where
-        -- Use a 'Map' to sum weights by classes.
+        -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes sorted by score
-        sortedClasses = reverse $ sortBy (compare `on` snd) classesScores
         -- Gives the list of classes with score
         classesScores = M.toList $ foldl' scoreAcc M.empty cs
         scoreAcc mapAcc (WeakClassifier c w) =

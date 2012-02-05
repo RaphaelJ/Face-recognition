@@ -1,5 +1,7 @@
 module HaarFeatures (
+    -- * Types & constructors
       HaarFeature (..)
+    -- * Functions
     , compute, features
     ) where
 
@@ -10,10 +12,10 @@ import IntegralImage (IntegralImage, computeIntegralImage)
 import qualified Window as W
 
 data HaarFeature = TwoVertRect Rect
-             | TwoHorizRect Rect
-             | ThreeVertRect Rect
-             | ThreeHorizRect Rect
-             | FourRect Rect
+                 | TwoHorizRect Rect
+                 | ThreeVertRect Rect
+                 | ThreeHorizRect Rect
+                 | FourRect Rect
     deriving (Show, Read, Eq)
 
 compute :: HaarFeature -> W.Win -> Int64
@@ -136,6 +138,7 @@ compute (FourRect (Rect x y w h)) win =
     in s1 + s4 - s2 - s3
 
 -- | List all features inside a standard window.
+features :: [HaarFeature]
 features =
     map TwoVertRect (W.featuresPos 1 2) ++
     map TwoHorizRect (W.featuresPos 2 1) ++
