@@ -71,18 +71,19 @@ adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers initTests'
   where
     -- Computes the numbers of classes in the tests.
-    nclasses = S.size $ S.fromList $ map tClass initTests
+    nClasses = S.size $ S.fromList $ map tClass initTests
 
-    -- Set an initial weight for each test
-    -- Test's weight = 100% / n classes / n test for this class
+    -- Sets an initial weight for each test
+    -- Test's weight = 100% / n classes / n tests for this class.
     initTests' =
         let createTest weight t = (t, weight)
-            classesWeights = 1.0 / fromIntegral $ length classes
-            testWeight tests = classesWeights / fromIntegral (length tests)
+            classesWeights = 1.0 / fromIntegral nClasses
+            testWeight = classesWeights / fromIntegral (length initTests)
+            map 
             mapTests tests = map (createTest (testWeight tests)) tests
         in concatMap (mapTests) classes
 
-    -- One step: selects a new classifier
+    -- One step: selects a new weak classifier, update the weights.
     selectClassifiers tests =
         WeakClassifier cl cWeight : selectClassifiers tests'
       where
