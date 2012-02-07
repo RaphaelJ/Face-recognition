@@ -18,16 +18,16 @@ import Debug.Trace
 
 type Weight = Double
 
--- | Represents an instance of a testable item (image ...) with its classes\'
--- type (Bool for binary classes, Int for many classes, ...).
-class TrainingTest t c where
-    tClass :: t -> c -- ^ Gives the class value of the test
+-- | Represents an instance of a testable item (image ...) with a method to gets
+-- its class identifier (i.e. 1 and 0 for binary classes).
+class TrainingTest t where
+    tClass :: t -> Int -- ^ Gives the class identifier of the test
 
 -- | Represents an instance of a classifier able to classify a type of tests
 -- for a class of items.
-class Classifier cl t c where
+class Classifier cl t where
     -- | Infers the class of the test using the classifier.
-    cClass :: cl -> t -> c
+    cClass :: cl -> t -> Int
 
 -- | A 'StrongClassifier' is a trained container with a set of classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
@@ -43,10 +43,8 @@ data WeakClassifier a = WeakClassifier {
     
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
 -- 'WeakClassifier' is itself an instance of 'Classifier'.
--- The class's type must be an instance of 'Ord' for fast seeking using 'Map'
--- The 'StrongClassifier' gives the class with the strongest score.
-instance (Classifier weak t c, Ord c)
-         => Classifier (StrongClassifier weak) t c where
+-- The 'StrongClassifier' will give the class with the strongest score.
+instance (Classifier weak t) => Classifier (StrongClassifier weak) t where
     cClass (StrongClassifier cs) test =
         fst $ maximumBy (compare `on` snd) classesScores
       where
@@ -61,7 +59,7 @@ instance (Classifier weak t c, Ord c)
 -- The selector gets a list of tests associated with a weight and return the
 -- best weak classifier with an error score, wich is the sum of failed tests.
 -- The weak classifier must be able to classify the tests.
-adaBoost :: (Classifier cl t c, TrainingTest t c, Ord c)
+adaBoost :: (Classifier cl t, TrainingTest t)
          => Int -> [t] ->
             -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.
@@ -71,7 +69,10 @@ adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
   where
     -- Groups the tests per class.
-    groupedTests = groupBy tClass $ sortBy tClass initTests
+    groupedTests =
+        let tClassEq = (==) `on` tClass
+            tClassCompare = compare `on` tClass
+        in groupBy tClassEq $ sortBy tClassCompare initTests
 
     -- Sets an initial weight for each test.
     -- Test's weight = 100% / n classes / n tests for this class.
@@ -83,7 +84,7 @@ adaBoost steps initTests weakSelector =
         
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers weakSelector tests =
-    WeakClassifier cl cWeight : selectClassifiers tests'
+    WeakClassifier cl cWeight : selectClassifiers weakSelector tests'
   where
     (cl, cError) = weakSelector tests
     

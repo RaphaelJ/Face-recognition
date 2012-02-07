@@ -11,6 +11,7 @@ module Trainer(
 
 import Control.Parallel.Strategies
 import Data.Function
+import Data.Int (Int64)
 import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
@@ -32,10 +33,10 @@ data TrainingImage = TrainingImage {
     , tiValid :: Bool
     }
 
-instance TrainingTest TrainingImage Bool where
-    tClass = tiValid
+instance TrainingTest TrainingImage where
+    tClass = fromEnum . tiValid
 
-instance Classifier HaarClassifier TrainingImage Bool where
+instance Classifier HaarClassifier TrainingImage where
     cClass classifier image = cClass classifier (tiWindow image)
 
 -- | Trains a strong classifier from directory of tests containing two
@@ -111,7 +112,7 @@ selectHaarClassifier tests =
         ) ([], weightValid) (featureValuesSorted feature tests)
 
     -- Sums the weight of all valid tests.
-    weightValid = sum $ map snd $ filter (isValid . fst) tests
+    weightValid = sum $ map snd $ filter (tiValid . fst) tests
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
@@ -122,7 +123,7 @@ featureValuesSorted feature =
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
-        let w' = if isValid t
+        let w' = if tiValid t
             then w
             else -w
         in (compute feature (tiWindow t), w')
