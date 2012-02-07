@@ -17,8 +17,8 @@ import Primitives
 data Win = Win {
       wRect :: Rect
     , wIntegral :: II.IntegralImage
-    , wDeviation :: Word16
-    , wAvg :: Word16
+    , wDeviation :: Int64
+    , wAvg :: Int64
     } deriving (Show)
 
 -- Default window\'s size
@@ -28,6 +28,7 @@ windowHeight = 24
 
 -- | Constructs a new 'Win' object, computing the standard derivation and the
 -- average pixels' value.
+win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect x y w h) integral squaredIntegral =
     Win rect integral deriv avg
   where
@@ -51,12 +52,12 @@ win rect@(Rect x y w h) integral squaredIntegral =
         in d + a - b - c
 
 -- | Lists all features positions and sizes inside the default window.
-featuresPos :: Integral -> Integral -> [Rect]
+featuresPos :: Word16 -> Word16 -> [Rect]
 featuresPos minWidth minHeight =
     rectangles minWidth minHeight windowWidth windowHeight
 
 -- | Lists all windows for any positions and sizes inside an image.
-windows :: IntegralImage -> IntegralImage -> Win
+windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
     let Size w h = II.imageSize integral
     in [ win rect integral squaredIntegral |
@@ -71,8 +72,8 @@ getValue (Win (Rect winX winY w h) image _ _) x y =
     ratio $ II.getValue image destX destY
   where
     -- New coordinates with the window's ratio
-    destX = winX + word16 (int x * int w `quot` windowWidth)
-    destY = winY + word16 (int y * int h `quot` windowHeight)
+    destX = winX + word16 (int x * int w `quot` int windowWidth)
+    destY = winY + word16 (int y * int h `quot` int windowHeight)
     n = int w * int h
     -- Sum with the window\'s size ratio
     ratio v = v * int windowWidth * int windowHeight `quot` int w `quot` int h
@@ -80,7 +81,7 @@ getValue (Win (Rect winX winY w h) image _ _) x y =
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
-normalizeSum :: Win ->  Integral -> Integral -> Integral
+normalizeSum :: Win -> Int64 -> Int64 -> Int64
 normalizeSum (Win _ _ deriv avg) n s =
     n * (normalize $ s `quot` n)
   where

@@ -63,41 +63,39 @@ instance (Classifier weak t c, Ord c)
 -- The weak classifier must be able to classify the tests.
 adaBoost :: (Classifier cl t c, TrainingTest t c, Ord c)
          => Int -> [t] ->
-            -- | The selector which builds an optimal 'WeakClassifier' (along)for the
+            -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.
             ([(t, Weight)] -> (cl, Weight))
             -> StrongClassifier cl
 adaBoost steps initTests weakSelector =
-    StrongClassifier $ take steps $ selectClassifiers initTests'
+    StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
   where
-    -- Computes the numbers of classes in the tests.
-    nClasses = S.size $ S.fromList $ map tClass initTests
+    -- Groups the tests per class.
+    groupedTests = groupBy tClass $ sortBy tClass initTests
 
-    -- Sets an initial weight for each test
+    -- Sets an initial weight for each test.
     -- Test's weight = 100% / n classes / n tests for this class.
     initTests' =
-        let createTest weight t = (t, weight)
-            classesWeights = 1.0 / fromIntegral nClasses
-            testWeight = classesWeights / fromIntegral (length initTests)
-            map 
-            mapTests tests = map (createTest (testWeight tests)) tests
-        in concatMap (mapTests) classes
-
-    -- One step: selects a new weak classifier, update the weights.
-    selectClassifiers tests =
-        WeakClassifier cl cWeight : selectClassifiers tests'
-      where
-        (cl, cError) = weakSelector tests
+        let classesWeights = 1.0 / fromIntegral (length groupedTests)
+            testsWeight tests = classesWeights / fromIntegral (length tests)
+            testsWithWeights tests = map (\t -> (t, testsWeight tests)) tests
+        in concatMap testsWithWeights groupedTests
         
-        cWeight = 0.5 * (log $ (1-cError) / cError)
+-- | One step : selects a new weak classifier, update the weights.
+selectClassifiers weakSelector tests =
+    WeakClassifier cl cWeight : selectClassifiers tests'
+  where
+    (cl, cError) = weakSelector tests
+    
+    cWeight = 0.5 * (log $ (1-cError) / cError)
 
-        -- Reduce the weight of positive tests, increment the weight
-        -- of negative tests.
-        tests' = normalizeWeights $ flip map tests $ \(t, w) ->
-            if cClass cl t == tClass t
-               then (t, w * exp (-cWeight))
-               else (t, w * exp cWeight)
+    -- Reduces the weight of positive tests, increment the weight of negative
+    -- tests.
+    tests' = normalizeWeights $ flip map tests $ \(t, w) ->
+        if cClass cl t == tClass t
+            then (t, w * exp (-cWeight))
+            else (t, w * exp cWeight)
 
-        normalizeWeights ts =
-            let sumWeights = sum $ map snd ts
-            in flip map ts $ \(t, w) -> (t, w / sumWeights)
+    normalizeWeights ts =
+        let sumWeights = sum $ map snd ts
+        in flip map ts $ \(t, w) -> (t, w / sumWeights)

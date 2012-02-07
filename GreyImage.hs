@@ -12,8 +12,8 @@ module GreyImage (
 import Control.Monad
 import qualified Data.Array as A (bounds, elems)
 import Data.Array.Unboxed (UArray, listArray, (!), bounds, elems, accum)
-import Data.Array.ST (runSTArray)
-import Data.MArray (thaw, readArray, writeArray)
+import Data.Array.ST (runSTUArray)
+import Data.Array.MArray (thaw, readArray, writeArray)
 import Data.Ix
 import Data.Word
 
@@ -42,7 +42,7 @@ drawRectangle :: GreyImage
               -> Rect -> GreyImage
 drawRectangle image back border (Rect x y w h) =
     -- Copies into a ST Array, apply transforms and freeze
-    runSTArray $
+    runSTUArray $
         thaw image >>= trans backCoords back >>= trans borderCoords border
   where
     borderCoords = [] {-range (Point x y, Point (x+w) y) -- Top
@@ -50,9 +50,10 @@ drawRectangle image back border (Rect x y w h) =
                 ++ range (Point x (y+1), Point x (y+h-1)) -- Left
                 ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
     backCoords = range (Point (x+1) (y+1), Point (x+w-2) (y+h-2))
-    trans cs f img =
+    trans cs f img = do
         forM_ cs $ \c -> do
             readArray img c >>= writeArray img c
+        return img
 
 -- | Creates a grey image from an RGB image.
 fromRgb :: RGB.Image -> GreyImage

@@ -63,7 +63,7 @@ load path size = do
     imageToArray image = do
         (w, h) <- GD.imageSize image
         xs <- forM (range ((0, 0), (w-1, h-1))) $ \coords ->
-            GD.getPixel coords image `fmap` fromGDColor
+            fromGDColor `fmap` GD.getPixel coords image
 
         let lastPoint = Point (fromIntegral w - 1) (fromIntegral h - 1)
         return $ listArray (Point 0 0, lastPoint) xs

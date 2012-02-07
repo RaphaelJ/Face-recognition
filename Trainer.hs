@@ -32,11 +32,11 @@ data TrainingImage = TrainingImage {
     , tiValid :: Bool
     }
 
-instance TrainingTest TrainingImage where
-    isValid = tiValid
+instance TrainingTest TrainingImage Bool where
+    tClass = tiValid
 
-instance Classifier HaarClassifier TrainingImage where
-    classifier `check` image = classifier `check` (tiWindow image)
+instance Classifier HaarClassifier TrainingImage Bool where
+    cClass classifier image = cClass classifier (tiWindow image)
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (bad & good).
@@ -117,8 +117,8 @@ selectHaarClassifier tests =
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
 featureValuesSorted :: HaarFeature -> [(TrainingImage, Weight)]
                        -> [(Int64, Weight)]
-featureValuesSorted feature tests =
-    sortBy (compare `on` value) $ map computeValue tests
+featureValuesSorted feature =
+    sortBy (compare `on` value) . map computeValue
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
