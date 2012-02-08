@@ -1,15 +1,15 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module HaarClassifier(
+module Vision.Haar.Classifier(
     -- * Types & constructors
       HaarClassifier (..)
     ) where
 
 import Data.Int
 
-import AdaBoost (Classifier (..))
-import HaarFeatures (HaarFeature, compute)
-import Window (Win)
+import AI.Learning.AdaBoost (Classifier (..))
+import Vision.Haar.Features (HaarFeature, compute)
+import Vision.Haar.Window (Win)
 
 -- | Weak Haar\'s 'Classifier' using a 'HaarFeature' to check an object.
 data HaarClassifier = HaarClassifier {

@@ -1,6 +1,6 @@
 import System (getArgs)
 
-import Trainer
+import Vision.Haar.Trainer
 
 main = do
     steps <- fmap (read . head) getArgs

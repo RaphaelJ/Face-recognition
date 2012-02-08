@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module AdaBoost (
+module AI.Learning.AdaBoost (
     -- * Classes
       TrainingTest (..), Classifier (..)
     -- * Types
@@ -13,8 +13,6 @@ module AdaBoost (
 import Data.Function
 import Data.List
 import qualified Data.Map as M
-import qualified Data.Set as S
-import Debug.Trace
 
 type Weight = Double
 

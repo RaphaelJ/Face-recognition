@@ -1,4 +1,4 @@
-module Image (
+module Graphics.Vision.Image (
     -- * Types & constructors
       Image, Pixel (..) 
     -- * Filesystem images manipulations
@@ -10,13 +10,14 @@ module Image (
 import Control.Monad
 import Data.Array (Array, listArray, (!), (//), bounds, assocs)
 import Data.Word
-import Ix
+import Data.Ix
 import System.FilePath.Posix (takeExtension)
 
 import qualified Graphics.GD as GD
 
-import Primitives
+import Graphics.Vision.Primitives
 
+-- TODO: Use a unboxed array of Word32
 type Image = Array Point Pixel
 data Pixel = Pixel {
       red :: Word8, green :: Word8, blue :: Word8

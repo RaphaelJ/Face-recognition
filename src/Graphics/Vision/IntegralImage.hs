@@ -1,4 +1,4 @@
-module IntegralImage (
+module Graphics.Vision.IntegralImage (
     -- * Type
       IntegralImage
     -- * Functions
@@ -13,8 +13,8 @@ import Data.Int
 import Data.List
 import Data.Word
 
-import Primitives
-import GreyImage (GreyImage, getPixel)
+import Graphics.Vision.Primitives
+import Graphics.Vision.GreyImage (GreyImage, getPixel)
 
 type IntegralImage = UArray Point Int64
 

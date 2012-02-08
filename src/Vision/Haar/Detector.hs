@@ -1,4 +1,4 @@
-module Detector(
+module Vision.Haar.Detector (
     -- * Functions
       detect
     -- * Impure utilities
@@ -7,11 +7,11 @@ module Detector(
 
 import System.FilePath (FilePath)
 
-import AdaBoost (Classifier (..), StrongClassifier)
-import GreyImage (load, save, drawRectangle)
-import HaarClassifier (HaarClassifier)
-import IntegralImage (computeIntegralImage)
-import Window (wRect, windows)
+import AI.Learning.AdaBoost (Classifier (..), StrongClassifier)
+import Graphics.Vision.GreyImage (load, save, drawRectangle)
+import Graphics.Vision.IntegralImage (computeIntegralImage)
+import Vision.Haar.HaarClassifier (HaarClassifier)
+import Vision.Haar.Window (wRect, windows)
 
 -- | Detects all positive matchs inside the image using a strong
 -- 'HaarClassifier'.

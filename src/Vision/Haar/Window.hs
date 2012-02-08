@@ -1,4 +1,4 @@
-module Window (
+module Vision.Haar.Window (
     -- * Types & constructors
       Win (..), win
     -- * Constants
