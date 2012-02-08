@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Haar.Classifier(
+module Vision.Haar.Classifier (
     -- * Types & constructors
       HaarClassifier (..)
     ) where

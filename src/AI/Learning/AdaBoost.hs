@@ -23,9 +23,9 @@ class TrainingTest t where
 
 -- | Represents an instance of a classifier able to classify a type of tests
 -- for a class of items.
-class Classifier cl t where
+class Classifier c t where
     -- | Infers the class of the test using the classifier.
-    cClass :: cl -> t -> Int
+    cClass :: c -> t -> Int
 
 -- | A 'StrongClassifier' is a trained container with a set of classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
@@ -57,12 +57,12 @@ instance (Classifier weak t) => Classifier (StrongClassifier weak) t where
 -- The selector gets a list of tests associated with a weight and return the
 -- best weak classifier with an error score, wich is the sum of failed tests.
 -- The weak classifier must be able to classify the tests.
-adaBoost :: (Classifier cl t, TrainingTest t)
+adaBoost :: (Classifier c t, TrainingTest t)
          => Int -> [t] ->
             -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.
-            ([(t, Weight)] -> (cl, Weight))
-            -> StrongClassifier cl
+            ([(t, Weight)] -> (c, Weight))
+            -> StrongClassifier c
 adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
   where
@@ -82,16 +82,16 @@ adaBoost steps initTests weakSelector =
         
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers weakSelector tests =
-    WeakClassifier cl cWeight : selectClassifiers weakSelector tests'
+    WeakClassifier c cWeight : selectClassifiers weakSelector tests'
   where
-    (cl, cError) = weakSelector tests
+    (c, cError) = weakSelector tests
     
     cWeight = 0.5 * (log $ (1-cError) / cError)
 
     -- Reduces the weight of positive tests, increment the weight of negative
     -- tests.
     tests' = normalizeWeights $ flip map tests $ \(t, w) ->
-        if cClass cl t == tClass t
+        if cClass c t == tClass t
             then (t, w * exp (-cWeight))
             else (t, w * exp cWeight)
 

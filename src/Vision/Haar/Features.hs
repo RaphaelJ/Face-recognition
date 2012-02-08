@@ -7,9 +7,9 @@ module Vision.Haar.Features (
 
 import Data.Int
     
-import Graphics.Vision.Primitives
-import Graphics.Vision.IntegralImage (IntegralImage, computeIntegralImage)sss
 import qualified Vision.Haar.Window as W
+import Vision.Images.IntegralImage (IntegralImage, computeIntegralImage)
+import Vision.Primitives
 
 data HaarFeature = TwoVertRect Rect
                  | TwoHorizRect Rect

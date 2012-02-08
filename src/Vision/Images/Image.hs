@@ -1,4 +1,4 @@
-module Graphics.Vision.Image (
+module Vision.Images.Image (
     -- * Types & constructors
       Image, Pixel (..) 
     -- * Filesystem images manipulations
@@ -15,16 +15,13 @@ import System.FilePath.Posix (takeExtension)
 
 import qualified Graphics.GD as GD
 
-import Graphics.Vision.Primitives
+import Vision.Primitives
 
 -- TODO: Use a unboxed array of Word32
 type Image = Array Point Pixel
 data Pixel = Pixel {
       red :: Word8, green :: Word8, blue :: Word8
     } deriving (Eq, Show)
-
--- Max image width or height (resize before processing).
-maxImageSize = Just 320
 
 -- | Loads an image at system path and detects image\'s type.
 -- The second parameter resize the image before processing.
@@ -46,20 +43,7 @@ load path size = do
             Just (Size w h) -> -- Forces image size
                 GD.resizeImage (fromIntegral w) (fromIntegral h) image
             Nothing ->
-                resizeIfTooLarge image
-
-    -- Resizes using maxImageSize.
-    resizeIfTooLarge image =
-        case maxImageSize of
-            Just maxSize -> do
-                (w, h) <- GD.imageSize image
-                
-                if w > h && w > maxSize then do
-                    GD.resizeImage maxSize (h * maxSize `quot` w) image
-                else if h > maxSize then do
-                    GD.resizeImage (w * maxSize `quot` h) maxSize image
-                else return image
-            Nothing -> return image
+                return image
     
     imageToArray image = do
         (w, h) <- GD.imageSize image

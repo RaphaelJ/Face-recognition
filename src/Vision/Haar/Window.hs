@@ -10,14 +10,14 @@ module Vision.Haar.Window (
 import Data.Int
 import Data.Word
 
-import qualified IntegralImage as II
-import Primitives
+import qualified Vision.Images.IntegralImage as II
+import Vision.Primitives
 
 -- | Used as a structure to iterate an image.
 data Win = Win {
       wRect :: Rect
     , wIntegral :: II.IntegralImage
-    , wDeviation :: Int64
+    , wDeviation :: Int64 -- ^ Int64 to avoid casting
     , wAvg :: Int64
     } deriving (Show)
 
@@ -32,7 +32,7 @@ win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect x y w h) integral squaredIntegral =
     Win rect integral deriv avg
   where
-    deriv = round $ sqrt $ double $ (squaresSum `quot` n) - avg^2
+    deriv = max 1 $ round $ sqrt $ double $ (squaresSum `quot` n) - avg^2
     n = int w * int h
     valuesSum = sumRectangle integral
     avg = valuesSum `quot` n

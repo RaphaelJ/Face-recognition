@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Trainer(
+module Vision.Haar.Trainer (
     -- * Types & constructors
       TrainingImage (..)
     -- * Weak classifier selector
@@ -16,16 +16,16 @@ import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
 
-import AdaBoost (
+import AI.Learning.AdaBoost (
       TrainingTest (..), Classifier (..)
     , Weight, StrongClassifier, adaBoost
     )
-import GreyImage (GreyImage, load)
-import HaarClassifier (HaarClassifier (..))
-import HaarFeatures (HaarFeature, features, compute)
-import IntegralImage (computeIntegralImage)
-import Primitives
-import Window (Win, win, windowWidth, windowHeight)
+import Vision.Haar.Classifier (HaarClassifier (..))
+import Vision.Haar.Features (HaarFeature, features, compute)
+import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
+import Vision.Images.GreyImage (GreyImage, load)
+import Vision.Images.IntegralImage (computeIntegralImage)
+import Vision.Primitives
 
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {

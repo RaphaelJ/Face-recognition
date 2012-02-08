@@ -1,4 +1,4 @@
-module Graphics.Vision.Primitives (
+module Vision.Primitives (
     -- * Types & constructors
       Point (..), Size (..), Rect (..)
     ) where

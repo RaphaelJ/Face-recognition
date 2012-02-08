@@ -1,4 +1,4 @@
-module Graphics.Vision.GreyImage (
+module Vision.Images.GreyImage (
     -- * Types & constructors
       GreyImage, Pixel (..)
     -- * Filesystem images manipulations
@@ -17,8 +17,8 @@ import Data.Array.MArray (thaw, readArray, writeArray)
 import Data.Ix
 import Data.Word
 
-import qualified Graphics.Vision.Image as RGB (Image, Pixel (..), load, save)
-import Graphics.Vision.Primitives
+import qualified Vision.Images.Image as RGB (Image, Pixel (..), load, save)
+import Vision.Primitives
 
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
