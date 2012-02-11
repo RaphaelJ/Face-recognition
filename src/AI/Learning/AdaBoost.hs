@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module AI.Learning.AdaBoost (
     -- * Classes
@@ -17,15 +19,15 @@ import qualified Data.Map as M
 type Weight = Double
 
 -- | Represents an instance of a testable item (image ...) with a method to gets
--- its class identifier (i.e. 1 and 0 for binary classes).
-class TrainingTest t where
-    tClass :: t -> Int -- ^ Gives the class identifier of the test
+-- its class identifier (i.e. Bool for binary classes, ).
+class TrainingTest t cl | t -> cl where
+    tClass :: t -> cl -- ^ Gives the class identifier of the test
 
 -- | Represents an instance of a classifier able to classify a type of tests
 -- for a class of items.
-class Classifier c t where
+class Classifier c t cl | c t -> cl where
     -- | Infers the class of the test using the classifier.
-    cClass :: c -> t -> Int
+    cClass :: c -> t -> cl
 
 -- | A 'StrongClassifier' is a trained container with a set of classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
@@ -42,7 +44,8 @@ data WeakClassifier a = WeakClassifier {
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
 -- 'WeakClassifier' is itself an instance of 'Classifier'.
 -- The 'StrongClassifier' will give the class with the strongest score.
-instance (Classifier weak t) => Classifier (StrongClassifier weak) t where
+instance (Classifier weak t cl, Ord cl)
+         => Classifier (StrongClassifier weak) t cl where
     cClass (StrongClassifier cs) test =
         fst $ maximumBy (compare `on` snd) classesScores
       where
@@ -57,7 +60,7 @@ instance (Classifier weak t) => Classifier (StrongClassifier weak) t where
 -- The selector gets a list of tests associated with a weight and return the
 -- best weak classifier with an error score, wich is the sum of failed tests.
 -- The weak classifier must be able to classify the tests.
-adaBoost :: (Classifier c t, TrainingTest t)
+adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl)
          => Int -> [t] ->
             -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.

@@ -4,4 +4,5 @@ import Vision.Haar.Trainer
 
 main = do
     steps <- fmap (read . head) getArgs
-    train "LearningTests" steps "classifier.cl"
+    train "../data/learning_faces/" steps "../data/classifier.cl"
+

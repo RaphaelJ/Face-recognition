@@ -33,10 +33,10 @@ data TrainingImage = TrainingImage {
     , tiValid :: Bool
     }
 
-instance TrainingTest TrainingImage where
-    tClass = fromEnum . tiValid
+instance TrainingTest TrainingImage Bool where
+    tClass = tiValid
 
-instance Classifier HaarClassifier TrainingImage where
+instance Classifier HaarClassifier TrainingImage Bool where
     cClass classifier image = cClass classifier (tiWindow image)
 
 -- | Trains a strong classifier from directory of tests containing two
