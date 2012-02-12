@@ -30,13 +30,13 @@ compute (TwoVertRect (Rect x y w h)) win =
     -- -         -
     -- e ------- f
     let h' = h `quot` 2
-        a = W.getValue win x y
-        b = W.getValue win (x+w) y
-        c = W.getValue win x (y+h')
-        d = W.getValue win (x+w) (y+h')
-        e = W.getValue win x (y+h)
-        f = W.getValue win (x+w) (y+h)
-        normalize = W.normalizeSum win (int w * int h)
+        a = W.getValue win (Point x y)
+        b = W.getValue win (Point (x+w) y)
+        c = W.getValue win (Point x (y+h'))
+        d = W.getValue win (Point (x+w) (y+h'))
+        e = W.getValue win (Point x (y+h))
+        f = W.getValue win (Point (x+w) (y+h))
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
     in s2 - s1
@@ -48,13 +48,13 @@ compute (TwoHorizRect (Rect x y w h)) win =
     -- -         -         -
     -- d ------- e ------- f
     let w' = w `quot` 2
-        a = W.getValue win x y
-        b = W.getValue win (x+w') y
-        c = W.getValue win (x+w) y
-        d = W.getValue win x (y+h)
-        e = W.getValue win (x+w') (y+h)
-        f = W.getValue win (x+w) (y+h)
-        normalize = W.normalizeSum win (int w * int h)
+        a = W.getValue win (Point x y)
+        b = W.getValue win (Point (x+w') y)
+        c = W.getValue win (Point (x+w) y)
+        d = W.getValue win (Point x (y+h))
+        e = W.getValue win (Point (x+w') (y+h))
+        f = W.getValue win (Point (x+w) (y+h))
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ e + a - b - d
         s2 = normalize $ f + b - c - e
     in s2 - s1
@@ -74,15 +74,15 @@ compute (ThreeVertRect (Rect x y w h)) win =
     -- -         -
     -- g ------- h''
     let h' = h `quot` 3
-        a = W.getValue win x y
-        b = W.getValue win (x+w) y
-        c = W.getValue win x (y+h')
-        d = W.getValue win (x+w) (y+h')
-        e = W.getValue win x (y+h'+h')
-        f = W.getValue win (x+w) (y+h'+h')
-        g = W.getValue win x (y+h)
-        h'' = W.getValue win (x+w) (y+h)
-        normalize = W.normalizeSum win (int w * int h)
+        a = W.getValue win (Point x y)
+        b = W.getValue win (Point (x+w) y)
+        c = W.getValue win (Point x (y+h'))
+        d = W.getValue win (Point (x+w) (y+h'))
+        e = W.getValue win (Point x (y+h'+h'))
+        f = W.getValue win (Point (x+w) (y+h'+h'))
+        g = W.getValue win (Point x (y+h))
+        h'' = W.getValue win (Point (x+w) (y+h))
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
         s3 = normalize $ h'' + e - f - g
@@ -95,15 +95,15 @@ compute (ThreeHorizRect (Rect x y w h)) win =
     -- -         -         -         -
     -- e ------- f ------- g ------- h''
     let w' = w `quot` 3
-        a = W.getValue win x y
-        b = W.getValue win (x+w') y
-        c = W.getValue win (x+w'+w') y
-        d = W.getValue win (x+w) y
-        e = W.getValue win x (y+h)
-        f = W.getValue win (x+w') (y+h)
-        g = W.getValue win (x+w'+w') (y+h)
-        h'' = W.getValue win (x+w) (y+h)
-        normalize = W.normalizeSum win (int w * int h)
+        a = W.getValue win (Point x y)
+        b = W.getValue win (Point (x+w') y)
+        c = W.getValue win (Point (x+w'+w') y)
+        d = W.getValue win (Point (x+w) y)
+        e = W.getValue win (Point x (y+h))
+        f = W.getValue win (Point (x+w') (y+h))
+        g = W.getValue win (Point (x+w'+w') (y+h))
+        h'' = W.getValue win (Point (x+w) (y+h))
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ f + a - b - e
         s2 = normalize $ g + b - c - f
         s3 = normalize $ h'' + c - d - g
@@ -121,16 +121,16 @@ compute (FourRect (Rect x y w h)) win =
     -- g ------ h'' ------ i
     let w' = w `quot` 2
         h' = h `quot` 2
-        a = W.getValue win x y
-        b = W.getValue win (x+w') y
-        c = W.getValue win (x+w) y
-        d = W.getValue win x (y+h')
-        e = W.getValue win (x+w') (y+h')
-        f = W.getValue win (x+w) (y+h')
-        g = W.getValue win x (y+h)
-        h'' = W.getValue win (x+w') (y+h)
-        i = W.getValue win (x+w) (y+h)
-        normalize = W.normalizeSum win (int w * int h)
+        a = W.getValue win (Point x y)
+        b = W.getValue win (Point (x+w') y)
+        c = W.getValue win (Point (x+w) y)
+        d = W.getValue win (Point x (y+h'))
+        e = W.getValue win (Point (x+w') (y+h'))
+        f = W.getValue win (Point (x+w) (y+h'))
+        g = W.getValue win (Point x (y+h))
+        h'' = W.getValue win (Point (x+w') (y+h))
+        i = W.getValue win (Point (x+w) (y+h))
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ e + a - b - d
         s2 = normalize $ f + b - c - d
         s3 = normalize $ h'' + d - e - g
@@ -146,5 +146,5 @@ features =
     map ThreeHorizRect (W.featuresPos 3 1) ++
     map FourRect (W.featuresPos 2 2)
 
-int :: (Integral a) => a -> Int64
-int = fromIntegral
+int64 :: (Integral a) => a -> Int64
+int64 = fromIntegral

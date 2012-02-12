@@ -3,37 +3,58 @@ module Vision.Images.GreyImage (
       GreyImage, Pixel (..)
     -- * Filesystem images manipulations
     , load, save
+    -- * Functions
+    , getPixel, getSize, resize, drawRectangle
     -- * Transforms between grey and RGB images
     , fromRgb, toRgb
-    -- * Functions
-    , getPixel, drawRectangle
     ) where
 
 import Control.Monad
-import qualified Data.Array as A (bounds, elems)
-import Data.Array.Unboxed (UArray, listArray, (!), bounds, elems, accum)
-import Data.Array.ST (runSTUArray)
 import Data.Array.MArray (thaw, readArray, writeArray)
+import Data.Array.ST (newArray_, runSTUArray)
+import Data.Array.Unboxed (UArray, listArray, (!), bounds, elems)
 import Data.Ix
 import Data.Word
 
-import qualified Vision.Images.Image as RGB (Image, Pixel (..), load, save)
+import qualified Vision.Images.Image as RGB
 import Vision.Primitives
 
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
 
 -- | Loads an image as grey at system path and detects image\'s type.
-load :: FilePath -> Maybe Size -> IO GreyImage
-load path size = fromRgb `fmap` RGB.load path size
+load :: FilePath -> IO GreyImage
+load path = fromRgb `fmap` RGB.load path
 
--- | Saves an grey image.
+-- | Saves a grey image.
 save :: FilePath -> GreyImage -> IO ()
 save path = RGB.save path . toRgb
 
--- | Gets a pixel at (x, y).
+-- | Gets a pixel from the image.
 getPixel :: GreyImage -> Point -> Pixel
 getPixel image coord = image ! coord
+
+-- | Gets image\'s size.
+getSize :: GreyImage -> Size
+getSize image =
+    let Point w h = snd $ bounds $ image
+    in Size (w + 1) (h + 1)
+
+-- | Resizes an image using the nearest-neighbor interpolation.
+resize :: GreyImage -> Size -> GreyImage
+resize image (Size w' h') = runSTUArray $ do
+    image' <- newArray_ newBounds
+
+    forM_ (range newBounds) $ \coords'@(Point x' y') -> do
+        let (x, y) = (round $ double x' / ratioW, round $ double y' / ratioH)
+        writeArray image' coords' $ getPixel image (Point x y)
+    
+    return image'
+  where
+    newBounds = (Point 0 0, Point (w'-1) (h'-1))
+    Size w h = getSize image
+    ratioW = double w' / double w
+    ratioH = double h' / double h
 
 -- | Draws a rectangle inside the image using two transformation functions.
 drawRectangle :: GreyImage
@@ -57,17 +78,44 @@ drawRectangle image back border (Rect x y w h) =
 
 -- | Creates a grey image from an RGB image.
 fromRgb :: RGB.Image -> GreyImage
-fromRgb image = listArray (A.bounds image) $ map pixToGrey $ A.elems image
+fromRgb image = runSTUArray $ do
+    image' <- newArray_ bounds'
+
+    forM_ (range bounds') $ \coords ->
+        writeArray image' coords $ pixToGrey $ RGB.getPixel image coords
+
+    return image'
   where
+    Size w h = RGB.getSize image
+    bounds' = (Point 0 0, Point (w-1) (h-1))
+
     pixToGrey pix =
         -- Uses eye perception of colors
-        let r = (fromIntegral $ RGB.red pix) * 30
-            g = (fromIntegral $ RGB.green pix) * 59
-            b = (fromIntegral $ RGB.blue pix) * 11
-        in fromIntegral $ (r + g + b) `quot` (100 :: Int)
+        let r = (int $ RGB.red pix) * 30
+            g = (int $ RGB.green pix) * 59
+            b = (int $ RGB.blue pix) * 11
+        in word8 $ (r + g + b) `quot` 100
 
 -- | Creates a RGB image from an grey image.
 toRgb :: GreyImage -> RGB.Image
-toRgb image = listArray (bounds image) $ map pixToRGB $ elems image
+toRgb image = runSTUArray $ do
+    image' <- newArray_ bounds'
+
+    forM_ (range bounds') $ \coords@(y, x, c) ->
+        -- Sets 255 to the alpha channel
+        let v = if c == 3
+                   then maxBound
+                   else getPixel image (Point x y)
+        in writeArray image' coords v
+
+    return image'
   where
-    pixToRGB pix = RGB.Pixel { RGB.red = pix, RGB.green = pix, RGB.blue = pix }
+    Size w h = getSize image
+    bounds' = ((0, 0, 0), (h-1, w-1, 3))
+
+int :: Integral a => a -> Int
+int = fromIntegral
+word8 :: Integral a => a -> Word8
+word8 = fromIntegral
+double :: Integral a => a -> Double
+double = fromIntegral

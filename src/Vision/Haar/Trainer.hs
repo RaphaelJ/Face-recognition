@@ -11,7 +11,7 @@ module Vision.Haar.Trainer (
 
 import Control.Parallel.Strategies
 import Data.Function
-import Data.Int (Int64)
+import Data.Int
 import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
@@ -23,7 +23,7 @@ import AI.Learning.AdaBoost (
 import Vision.Haar.Classifier (HaarClassifier (..))
 import Vision.Haar.Features (HaarFeature, features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
-import Vision.Images.GreyImage (GreyImage, load)
+import Vision.Images.GreyImage (GreyImage, load, resize)
 import Vision.Images.IntegralImage (computeIntegralImage)
 import Vision.Primitives
 
@@ -38,49 +38,6 @@ instance TrainingTest TrainingImage Bool where
 
 instance Classifier HaarClassifier TrainingImage Bool where
     cClass classifier image = cClass classifier (tiWindow image)
-
--- | Trains a strong classifier from directory of tests containing two
--- directories (bad & good).
-train :: FilePath -> Int -> FilePath -> IO ()
-train directory steps savePath = do
-    putStrLn "Loading images ..."
-    good <- loadIntegral True (directory </> "good")
-    putStrLn "\tgood/ loaded"
-    bad <- loadIntegral False (directory </> "bad")
-    putStrLn "\tbad/ loaded"
-    let tests = good ++ bad
-
-    putStrLn "Train classifier ..."
-    let classifier = adaBoost steps tests selectHaarClassifier
-    print classifier
-
-    putStrLn "Save classifier ..."
-    writeFile savePath $ show classifier
-    
-  where
-    loadIntegral valid = fmap (trainingImages valid) . loadImages
-     
-    loadImages dir = do
-        paths <- getDirectoryContents $ dir
-        mapM (loadImage . (dir </>)) (excludeHidden paths)
-        
-    loadImage path =
-        load path $ Just $ Size windowWidth windowHeight
-        
-    excludeHidden = filter $ ((/=) '.') . head
-
--- | Accepts a list of images with a boolean indicating if the image is valid.
--- Compute the 'IntegralImage' and initialises a full image 'Win' for each
--- image.
-trainingImages :: Bool -> [GreyImage] -> [TrainingImage]
-trainingImages valid = map trainingImage
-  where
-    rect = Rect 0 0 windowWidth windowHeight
-    trainingImage image =
-        let int = computeIntegralImage image id
-            squaredInt = computeIntegralImage image (^2)
-            window = win rect int squaredInt
-        in TrainingImage window valid
 
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
@@ -129,3 +86,47 @@ featureValuesSorted feature =
         in (compute feature (tiWindow t), w')
     
     value = fst
+
+-- | Trains a strong classifier from directory of tests containing two
+-- directories (bad & good).
+train :: FilePath -> Int -> FilePath -> IO ()
+train directory steps savePath = do
+    putStrLn "Loading images ..."
+    good <- loadIntegral True (directory </> "good")
+    putStrLn "\tgood/ loaded"
+    bad <- loadIntegral False (directory </> "bad")
+    putStrLn "\tbad/ loaded"
+    let tests = good ++ bad
+
+    putStrLn "Train classifier ..."
+    let classifier = adaBoost steps tests selectHaarClassifier
+    print classifier
+
+    putStrLn "Save classifier ..."
+    writeFile savePath $ show classifier
+
+  where
+    loadIntegral valid = fmap (trainingImages valid) . loadImages
+
+    loadImages dir = do
+        paths <- getDirectoryContents $ dir
+        mapM (loadImage . (dir </>)) (excludeHidden paths)
+
+    loadImage path = do
+        img <- load path
+        return $ resize img $ Size windowWidth windowHeight
+
+    excludeHidden = filter $ ((/=) '.') . head
+
+-- | Accepts a list of images with a boolean indicating if the image is valid.
+-- Compute the 'IntegralImage' and initialises a full image 'Win' for each
+-- image.
+trainingImages :: Bool -> [GreyImage] -> [TrainingImage]
+trainingImages valid = map trainingImage
+  where
+    rect = Rect 0 0 windowWidth windowHeight
+    trainingImage image =
+        let int = computeIntegralImage image id
+            squaredInt = computeIntegralImage image (^2)
+            window = win rect int squaredInt
+        in TrainingImage window valid

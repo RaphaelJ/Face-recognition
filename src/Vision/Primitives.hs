@@ -6,7 +6,7 @@ module Vision.Primitives (
 import Data.Ix
 import Data.Word
 
-data Point = Point { pX :: Word16, pY :: Word16 }
+data Point = Point { pX :: Int, pY :: Int }
     deriving (Show, Read, Eq, Ord)
     
 instance Ix Point where
@@ -22,10 +22,10 @@ instance Ix Point where
     rangeSize (Point x1 y1, Point x2 y2) =
         rangeSize ((x1, y1), (x2, y2))
 
-data Size = Size { sWidth :: Word16, sHeight :: Word16 }
+data Size = Size { sWidth :: Int, sHeight :: Int }
     deriving (Show, Read, Eq)
 
 data Rect = Rect {
-      rX :: Word16, rY :: Word16
-    , rWidth :: Word16, rHeight :: Word16
+      rX :: Int, rY :: Int
+    , rWidth :: Int, rHeight :: Int
     } deriving (Show, Read, Eq)
