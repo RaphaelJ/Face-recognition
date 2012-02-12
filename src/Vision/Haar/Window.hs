@@ -11,7 +11,7 @@ import Data.Int
 import Data.Word
 
 import qualified Vision.Images.IntegralImage as II
-import Vision.Primitives
+import Vision.Primitives (Point (..), Size (..), Rect (..))
 
 -- | Used as a structure to iterate an image.
 data Win = Win {

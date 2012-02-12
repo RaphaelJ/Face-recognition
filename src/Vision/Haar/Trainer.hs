@@ -25,7 +25,7 @@ import Vision.Haar.Features (HaarFeature, features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
 import Vision.Images.GreyImage (GreyImage, load, resize)
 import Vision.Images.IntegralImage (computeIntegralImage)
-import Vision.Primitives
+import Vision.Primitives (Size (..), Rect (..))
 
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {

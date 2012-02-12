@@ -1,6 +1,8 @@
 module Vision.Primitives (
     -- * Types & constructors
       Point (..), Size (..), Rect (..)
+    -- * Utilities
+    , sizeBounds, sizeRange
     ) where
 
 import Data.Ix
@@ -29,3 +31,11 @@ data Rect = Rect {
       rX :: Int, rY :: Int
     , rWidth :: Int, rHeight :: Int
     } deriving (Show, Read, Eq)
+    
+-- | Returns the bounds of coordinates of a rectangle of the given size.
+sizeBounds :: Size -> (Point, Point)
+sizeBounds (Size w h) = (Point 0 0, Point (w-1) (h-1)) 
+    
+-- | Returns a list of coordinates within a rectangle of the given size.
+sizeRange :: Size -> [Point]
+sizeRange = range . sizeBounds

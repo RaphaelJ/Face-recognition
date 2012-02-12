@@ -9,7 +9,7 @@ import Data.Int
     
 import qualified Vision.Haar.Window as W
 import Vision.Images.IntegralImage (IntegralImage, computeIntegralImage)
-import Vision.Primitives
+import Vision.Primitives (Point (..), Rect (..))
 
 data HaarFeature = TwoVertRect Rect
                  | TwoHorizRect Rect

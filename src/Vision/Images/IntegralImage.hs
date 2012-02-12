@@ -12,7 +12,7 @@ import Data.Array.Unboxed (UArray, (!),  assocs, bounds)
 import Data.Int
 
 import Vision.Images.GreyImage (GreyImage, getPixel)
-import Vision.Primitives
+import Vision.Primitives (Point (..), Size (..))
 
 type IntegralImage = UArray Point Int64
 
