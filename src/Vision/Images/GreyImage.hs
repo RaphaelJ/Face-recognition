@@ -1,6 +1,6 @@
 module Vision.Images.GreyImage (
     -- * Types & constructors
-      GreyImage, Pixel (..)
+      GreyImage, Pixel (..), create
     -- * Filesystem images manipulations
     , load, save
     -- * Functions
@@ -17,10 +17,14 @@ import Data.Ix
 import Data.Word
 
 import qualified Vision.Images.Image as RGB
-import Vision.Primitives
+import Vision.Primitives (Point (..), Size (..), Rect (..), sizeBounds)
 
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
+
+-- | Creates a new image from a list of pixels.
+create :: Size -> [Pixel] -> GreyImage
+create = listArray . sizeBounds 
 
 -- | Loads an image as grey at system path and detects image\'s type.
 load :: FilePath -> IO GreyImage
@@ -42,16 +46,16 @@ getSize image =
 
 -- | Resizes an image using the nearest-neighbor interpolation.
 resize :: GreyImage -> Size -> GreyImage
-resize image (Size w' h') = runSTUArray $ do
-    image' <- newArray_ newBounds
+resize image size@(Size w' h') = runSTUArray $ do
+    image' <- newArray_ bounds'
 
-    forM_ (range newBounds) $ \coords'@(Point x' y') -> do
+    forM_ (range bounds') $ \coords'@(Point x' y') -> do
         let (x, y) = (round $ double x' / ratioW, round $ double y' / ratioH)
         writeArray image' coords' $ getPixel image (Point x y)
     
     return image'
   where
-    newBounds = (Point 0 0, Point (w'-1) (h'-1))
+    bounds' = sizeBounds size
     Size w h = getSize image
     ratioW = double w' / double w
     ratioH = double h' / double h
@@ -86,8 +90,7 @@ fromRgb image = runSTUArray $ do
 
     return image'
   where
-    Size w h = RGB.getSize image
-    bounds' = (Point 0 0, Point (w-1) (h-1))
+    bounds' = sizeBounds $ RGB.getSize image
 
     pixToGrey pix =
         -- Uses eye perception of colors

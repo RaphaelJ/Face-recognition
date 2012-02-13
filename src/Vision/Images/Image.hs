@@ -11,13 +11,13 @@ import Control.Monad
 import Data.Array.MArray (newArray_)
 import Data.Array.Unboxed (UArray, (!), bounds)
 import Data.Array.ST (newArray_, runSTUArray, writeArray)
-import Data.Word
 import Data.Ix (range)
+import Data.Word
 import System.FilePath.Posix (takeExtension)
 
 import qualified Codec.Image.DevIL as IL
 
-import Vision.Primitives
+import Vision.Primitives (Point (..), Size (..))
 
 -- | Image (y, x, channel)
 type Image = UArray (Int, Int, Int) Word8
