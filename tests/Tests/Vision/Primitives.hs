@@ -1,5 +1,5 @@
 module Tests.Vision.Primitives (
-      primitivesTests
+      tests
     ) where
 
 import Control.Applicative
@@ -13,7 +13,7 @@ instance Arbitrary Size where
     arbitrary =
         Size <$> choose (0, maxImageSize) <*> choose (0, maxImageSize)
 
-primitivesTests = label "sizeRange length" propSizeRangeLength
+tests = label "sizeRange length" propSizeRangeLength
 
 propSizeRangeLength :: Size -> Bool
 propSizeRangeLength size@(Size w h) =

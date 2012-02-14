@@ -17,14 +17,16 @@ import Data.Ix
 import Data.Word
 
 import qualified Vision.Images.Image as RGB
-import Vision.Primitives (Point (..), Size (..), Rect (..), sizeBounds)
+import Vision.Primitives (
+    Point (..), Size (..), Rect (..), sizeBounds, sizeRange
+    )
 
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
 
 -- | Creates a new image from a list of pixels.
 create :: Size -> [Pixel] -> GreyImage
-create = listArray . sizeBounds 
+create = listArray . sizeBounds
 
 -- | Loads an image as grey at system path and detects image\'s type.
 load :: FilePath -> IO GreyImage
@@ -82,39 +84,28 @@ drawRectangle image back border (Rect x y w h) =
 
 -- | Creates a grey image from an RGB image.
 fromRgb :: RGB.Image -> GreyImage
-fromRgb image = runSTUArray $ do
-    image' <- newArray_ bounds'
-
-    forM_ (range bounds') $ \coords ->
-        writeArray image' coords $ pixToGrey $ RGB.getPixel image coords
-
-    return image'
+fromRgb image = 
+    create size $ map (pixToGrey . RGB.getPixel image) coords
   where
-    bounds' = sizeBounds $ RGB.getSize image
+    size = RGB.getSize image
+    coords = sizeRange size
 
     pixToGrey pix =
-        -- Uses eye perception of colors
+        -- Uses human eye perception of colors
         let r = (int $ RGB.red pix) * 30
             g = (int $ RGB.green pix) * 59
             b = (int $ RGB.blue pix) * 11
         in word8 $ (r + g + b) `quot` 100
-
+    
 -- | Creates a RGB image from an grey image.
 toRgb :: GreyImage -> RGB.Image
-toRgb image = runSTUArray $ do
-    image' <- newArray_ bounds'
-
-    forM_ (range bounds') $ \coords@(y, x, c) ->
-        -- Sets 255 to the alpha channel
-        let v = if c == 3
-                   then maxBound
-                   else getPixel image (Point x y)
-        in writeArray image' coords v
-
-    return image'
+toRgb image =
+    RGB.create size $ concatMap (pixToRGB . getPixel image) coords
   where
-    Size w h = getSize image
-    bounds' = ((0, 0, 0), (h-1, w-1, 3))
+    size = getSize image
+    coords = sizeRange size
+    
+    pixToRGB pix = [pix, pix, pix, maxBound]
 
 int :: Integral a => a -> Int
 int = fromIntegral

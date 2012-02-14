@@ -1,5 +1,5 @@
 import Test.QuickCheck
 
-import Tests.Vision.Primitives (primitivesTests)
+import qualified Tests.Vision.Primitives as P
 
-main = quickCheck primitivesTests
+main = quickCheck P.tests
