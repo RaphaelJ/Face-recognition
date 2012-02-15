@@ -4,7 +4,7 @@ module Vision.Images.Image (
     -- * Filesystem images manipulations
     , load, save
     -- * Functions
-    , getPixel, getSize
+    , getPixel, getSize, resize
 ) where
 
 import Control.Monad
@@ -63,11 +63,12 @@ resize image size'@(Size w' h') = runSTUArray $ do
     image' <- newArray_ $ imageBounds size'
 
     forM_ (sizeRange size') $ \(Point y' x') -> do
-        let (x, y) = (round $ double x' / ratioW, round $ double y' / ratioH)
+        let (x, y) = (x' * w `quot` w', y' * h `quot` h')
             Pixel r g b = getPixel image $ Point x y
         writeArray image' (y', x', 0) r
         writeArray image' (y', x', 1) g
         writeArray image' (y', x', 2) b
+        writeArray image' (y', x', 3) 
 
     return image'
   where
@@ -81,5 +82,7 @@ imageBounds (Size w h) = ((0, 0, 0), (h-1, w-1, 3))
 -- | Returns the list of the coordinates of the image.
 imageCoords = range . imageBounds
 
+int :: Integral a => a -> Int
+int = fromIntegral
 double :: Integral a => a -> Double
 double = fromIntegral
