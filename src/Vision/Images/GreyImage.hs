@@ -21,6 +21,7 @@ import Vision.Primitives (
     Point (..), Size (..), Rect (..), sizeBounds, sizeRange
     )
 
+-- | Greyscale image (y, x).
 type GreyImage = UArray Point Pixel
 type Pixel = Word8
 

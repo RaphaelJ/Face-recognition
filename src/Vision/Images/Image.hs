@@ -1,4 +1,4 @@
-module Vision.Images.Image (
+module Vision.Image.Image (
     -- * Types & constructors
       Image, Pixel (..), create
     -- * Filesystem images manipulations
@@ -15,14 +15,12 @@ import Data.Ix (range)
 import Data.Word
 import System.FilePath.Posix (takeExtension)
 
-import Debug.Trace
-
-import qualified Codec.Image.DevIL as IL
+import qualified Data.Array.Repa.IO.DevIL as IL
 
 import Vision.Primitives (Point (..), Size (..), sizeRange)
 
--- | Image (y, x, channel)
-type Image = UArray (Int, Int, Int) Word8
+-- | RGBA image (y, x, channel)
+type Image = IL.Array DIM3 Word8
 data Pixel = Pixel { red :: Word8, green :: Word8, blue :: Word8 }
 
 -- | Creates a new image from a list of pixels.
@@ -68,7 +66,6 @@ resize image size'@(Size w' h') = runSTUArray $ do
         writeArray image' (y', x', 0) r
         writeArray image' (y', x', 1) g
         writeArray image' (y', x', 2) b
-        writeArray image' (y', x', 3) 
 
     return image'
   where
