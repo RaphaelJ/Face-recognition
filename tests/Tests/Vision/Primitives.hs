@@ -5,9 +5,9 @@ module Tests.Vision.Primitives (
 import Control.Applicative
 import Test.QuickCheck
 
-import Tests.Config (maxImageSize)
+import Vision.Primitive (Size (..), sizeRange)
 
-import Vision.Primitives (Size (..), sizeRange)
+import Tests.Config (maxImageSize)
 
 instance Arbitrary Size where
     arbitrary =

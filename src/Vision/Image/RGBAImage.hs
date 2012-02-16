@@ -14,6 +14,8 @@ import Data.Array.ST (newArray_, runSTUArray, writeArray)
 import Data.Ix (range)
 import Data.Word
 
+import Debug.Trace
+
 import qualified Codec.Image.DevIL as IL
 
 import Vision.Primitive (Point (..), Size (..), sizeRange)
@@ -58,18 +60,12 @@ getSize image =
 
 -- | Resizes an image using the nearest-neighbor interpolation.
 resize :: RGBAImage -> Size -> RGBAImage
-resize image size'@(Size w' h') = runSTUArray $ do
-    image' <- newArray_ $ imageBounds size'
-
-    forM_ (sizeRange size') $ \(Point y' x') -> do
-        let (x, y) = (x' * w `quot` w', y' * h `quot` h')
-            Pixel r g b a = getPixel image $ Point x y
-        writeArray image' (y', x', 0) r
-        writeArray image' (y', x', 1) g
-        writeArray image' (y', x', 2) b
-        writeArray image' (y', x', 2) a
-
-    return image'
+resize image size'@(Size w' h') =
+    create size' [ image ! (y, x, c) |
+          y' <- [0..h'-1], x' <- [0..w'-1], c <- [0..3]
+        , let y = y' * h `quot` h'
+        , let x = x' * w `quot` w'
+    ]
   where
     Size w h = getSize image
 
@@ -80,8 +76,3 @@ imageBounds (Size w h) = ((0, 0, 0), (h-1, w-1, 3))
 -- | Returns the list of the coordinates of the image.
 imageRange :: Size -> [(Int, Int, Int)]
 imageRange = range . imageBounds
-
-int :: Integral a => a -> Int
-int = fromIntegral
-double :: Integral a => a -> Double
-double = fromIntegral
