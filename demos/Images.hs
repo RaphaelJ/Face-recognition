@@ -15,16 +15,16 @@ main = do
     putStrLn $ "Image size is " ++ show w ++ " x " ++ show h
     let grey = G.fromRGBA i
     defaultMain [
-          bench "load as RGBA" $ whnfIO $ R.load path
-        , bench "save as RGBA" $ whnfIO $ R.save pathOut i
-        , bench "resize 50% RGBA" $
-            whnf (R.resize i) (Size (w `quot` 2) (h `quot` 2))
-        , bench "resize 200% RGBA" $ whnf (R.resize i) (Size (w * 2) (h * 2))
-        
-        , bench "greyscale from RGBA" $ whnf (G.fromRGBA) i
-        , bench "greyscale to RGBA" $ whnf (G.toRGBA) grey
-        , bench "resize 50% greyscale" $
-            whnf (G.resize grey) (Size (w `quot` 2) (h `quot` 2))
-        , bench "resize 200% greyscale" $
-            whnf (G.resize grey) (Size (w * 2) (h * 2))
+--           bench "load as RGBA" $ whnfIO $ R.load path
+--         , bench "save as RGBA" $ whnfIO $ R.save pathOut i
+--         , bench "resize 50% RGBA" $
+--             whnf (R.resize i) (Size (w `quot` 2) (h `quot` 2))
+--         , bench "resize 200% RGBA" $ whnf (R.resize i) (Size (w * 2) (h * 2))
+--         
+         bench "greyscale from RGBA" $ whnf (G.fromRGBA) i
+--         bench "greyscale to RGBA" $ whnf (G.toRGBA) grey
+--         , bench "resize 50% greyscale" $
+--             whnf (G.resize grey) (Size (w `quot` 2) (h `quot` 2))
+--         , bench "resize 200% greyscale" $
+--             whnf (G.resize grey) (Size (w * 2) (h * 2))
         ]

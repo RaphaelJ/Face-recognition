@@ -8,7 +8,7 @@ module Vision.Primitive (
 import Data.Ix
 import Data.Word
 
-data Point = Point { pX :: Int, pY :: Int }
+data Point = Point { pX :: !Int, pY :: !Int }
     deriving (Show, Read, Eq, Ord)
     
 instance Ix Point where
@@ -24,18 +24,20 @@ instance Ix Point where
     rangeSize (Point x1 y1, Point x2 y2) =
         rangeSize ((x1, y1), (x2, y2))
 
-data Size = Size { sWidth :: Int, sHeight :: Int }
+data Size = Size { sWidth :: !Int, sHeight :: !Int }
     deriving (Show, Read, Eq)
 
 data Rect = Rect {
-      rX :: Int, rY :: Int
-    , rWidth :: Int, rHeight :: Int
+      rX :: !Int, rY :: !Int
+    , rWidth :: !Int, rHeight :: !Int
     } deriving (Show, Read, Eq)
     
 -- | Returns the bounds of coordinates of a rectangle of the given size.
 sizeBounds :: Size -> (Point, Point)
-sizeBounds (Size w h) = (Point 0 0, Point (w-1) (h-1)) 
+sizeBounds (Size w h) = (Point 0 0, Point (w-1) (h-1))
+{-# INLINE sizeBounds #-}
     
 -- | Returns a list of coordinates within a rectangle of the given size.
 sizeRange :: Size -> [Point]
 sizeRange = range . sizeBounds
+{-# INLINE sizeRange #-}
