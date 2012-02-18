@@ -78,10 +78,10 @@ drawRectangle image back border (Rect x y w h) =
                 ++ range (Point x (y+1), Point x (y+h-1)) -- Left
                 ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
     backPts = [ (shape, v) |
-          y <- [y..y+h-1], x <- [x..x+w-1]
-        , let !shape = (Z :. y :. x)
-        , let !v = back $ image `unsafeIndex` shape
-    ]
+            y <- [y..y+h-1], x <- [x..x+w-1]
+            , let !shape = (Z :. y :. x)
+            , let !v = back $ image `unsafeIndex` shape
+        ]
 
 -- | Creates a grey image from an RGBA image.
 fromRGBA :: R.RGBAImage -> GreyImage
@@ -99,10 +99,12 @@ fromRGBA image =
 -- | Creates a RGBA image from an grey image.
 toRGBA :: GreyImage -> R.RGBAImage
 toRGBA image =
-    R.create size $ concatMap (pixToRGBA . unsafeGetPixel image) coords
+    R.create size $ concat [ pixToRGBA pix |
+          y <- [0..h-1], x <- [0..w-1]
+        , let !pix = image `getPixel` Point x y
+    ]
   where
     size@(Size w h) = getSize image
-    coords = sizeRange size
 
     pixToRGBA pix = [pix, pix, pix, maxBound]
 
