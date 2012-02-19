@@ -11,10 +11,15 @@ import Data.Array.ST (STUArray, newArray_, runSTUArray, readArray, writeArray)
 import Data.Array.Unboxed (UArray, (!),  assocs, bounds)
 import Data.Int
 
+import Data.Array.Repa (
+      Array, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent
+    , traverse, force
+    )
+    
 import Vision.Images.GreyImage (GreyImage, getPixel)
 import Vision.Primitives (Point (..), Size (..))
 
-type IntegralImage = UArray Point Int64
+type IntegralImage = Array DIM2 Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
 computeIntegralImage :: GreyImage -> (Int64 -> Int64) -> IntegralImage

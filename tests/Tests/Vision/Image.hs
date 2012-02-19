@@ -7,6 +7,8 @@ module Tests.Vision.Image (
 import Control.Applicative
 import Test.QuickCheck
 
+import Debug.Trace
+
 import Vision.Primitive (Size (..))
 import qualified Vision.Image.RGBAImage as R
 import qualified Vision.Image.GreyImage as G
@@ -14,9 +16,10 @@ import qualified Vision.Image.GreyImage as G
 import Tests.Config (maxImageSize)
 import qualified Tests.Vision.Primitive
 
--- instance Arbitrary Image where
---     arbitrary =
---         Size <$> choose (0, maxImageSize) <*> choose (0, maxImageSize)
+instance Arbitrary R.RGBAImage where
+    arbitrary = do
+        [size@(Size w h)] <- vector 1 :: Gen [Size]
+        R.create size <$> vector (w * h * 4)
         
 instance Arbitrary G.GreyImage where
     arbitrary = do
@@ -27,18 +30,21 @@ instance Arbitrary G.GreyImage where
 --     arbitrary =
 --         Size <$> choose (0, maxImageSize) <*> choose (0, maxImageSize)
 
-tests = {-conjoin [-}
-              label "Grey => RGBA => Grey" $ propGreyRGBA
---             , label "Grey => Resize 200% => RGBA => Resize 50% => Grey" $
---                 propGreyResize
---         ]
+tests = conjoin [
+              label "Grey to/from RGBA" $ propGreyRGBA
+            , label "RGBA resize" $ propRGBAResize
+            , label "Grey resize" $ propGreyResize
+        ]
 
 propGreyRGBA :: G.GreyImage -> Bool
 propGreyRGBA img = img == G.fromRGBA (G.toRGBA img)
 
--- propGreyResize :: G.GreyImage -> Bool
--- propGreyResize img =
---     let Size w h = G.getSize img
---         img' = G.fromRGBA $ flip R.resize (Size (w `quot` 2) (h `quot` 2))
---              $ G.toRGBA   $ flip G.resize (Size (w * 2)      (h * 2)) $ img
---     in img == img'
+propRGBAResize :: R.RGBAImage -> Bool
+propRGBAResize img =
+    let size@(Size w h) = R.getSize img
+    in img == R.resize (R.resize img (Size (w * 2) (h * 2))) size
+
+propGreyResize :: G.GreyImage -> Bool
+propGreyResize img =
+    let size@(Size w h) = G.getSize img
+    in img == G.resize (G.resize img (Size (w * 2) (h * 2))) size
