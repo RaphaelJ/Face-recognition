@@ -6,7 +6,6 @@ module Vision.Primitive (
     ) where
 
 import Data.Ix
-import Data.Word
 
 data Point = Point { pX :: !Int, pY :: !Int }
     deriving (Show, Read, Eq, Ord)

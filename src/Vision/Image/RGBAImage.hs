@@ -13,11 +13,10 @@ import Data.Word
 
 import Data.Array.Repa (
       Array, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent
-    , traverse, force
     )
 import qualified Data.Array.Repa.IO.DevIL as IL
 
-import Vision.Primitive (Point (..), Size (..), sizeRange)
+import Vision.Primitive (Point (..), Size (..))
 
 -- | RGBA image (y :. x :. channel).
 type RGBAImage = Array DIM3 Word8
@@ -52,7 +51,7 @@ getPixel image (Point x y) =
 -- | Gets image\'s size.
 getSize :: RGBAImage -> Size
 getSize image = 
-    let (Z :. h :. w :. c) = extent image
+    let (Z :. h :. w :. _) = extent image
     in Size w h
 {-# INLINE getSize #-}
 

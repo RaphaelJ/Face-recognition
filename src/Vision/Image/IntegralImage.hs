@@ -2,57 +2,53 @@ module Vision.Image.IntegralImage (
     -- * Type
       IntegralImage
     -- * Functions
-    , computeIntegralImage, getValue, imageSize
+    , integralImage, getValue, getSize
     ) where
-    
-import Control.Monad
-import Control.Monad.ST
-import Data.Array.ST (STUArray, newArray_, runSTUArray, readArray, writeArray)
-import Data.Array.Unboxed (UArray, (!),  assocs, bounds)
+
+import Data.Array (Array, (!), array, bounds)
 import Data.Int
 
-import Data.Array.Repa (
-      Array, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent
-    , traverse, force
-    )
-    
-import Vision.Images.GreyImage (GreyImage, getPixel)
-import Vision.Primitives (Point (..), Size (..))
+import qualified Vision.Image.GreyImage as G
+import Vision.Primitive (Point (..), Size (..))
 
-type IntegralImage = Array DIM2 Int64
+type IntegralImage = Array (Int, Int) Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
-computeIntegralImage :: GreyImage -> (Int64 -> Int64) -> IntegralImage
-computeIntegralImage image f = runSTUArray $ do
-    integral <- newArray_ (bounds image) :: ST s (STUArray s Point Int64)
+integralImage :: Integral a => G.GreyImage -> (G.Pixel -> a) -> IntegralImage
+integralImage image f =
+    integral
+  where
+    integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
 
-    forM_ (assocs image) $ \(coord@(Point x y), pix) -> do
-        let pix' = f $ int64 pix
-        topLeft <- if x > 0 && y > 0
-            then readArray integral (Point (x-1) (y-1))
-            else return 0
-        top <- if y > 0
-            then readArray integral (Point x (y-1))
-            else return 0
-        left <- if x > 0
-            then readArray integral (Point (x-1) y)
-            else return 0
+    -- Initializes the first row and the first column to zero
+    topValues = scanl (\acc x -> ((0, x), 0)) ((0, 0), 0) [1..w]
+    leftValues = scanl (\acc y -> ((y, 0), 0)) ((0, 0), 0) [1..h]
 
-        writeArray integral coord (pix' + left + top - topLeft)
-
-    return integral
+    values = [ ((y, x), pix + left + top - topLeft) |
+          y <- [1..h], x <- [1..w]
+        , let pix = value (x-1) (y-1)
+        , let topLeft = integral ! (y-1, x-1)
+        , let top = integral ! (y-1, x)
+        , let left = integral ! (y, x-1)
+        ]
+    
+    Size w h = G.getSize image
+    value x y = int64 $! f $! image `G.getPixel` Point x y
+    
+{-# INLINABLE integralImage #-}
 
 -- | Gets the value of a point inside an 'IntegralImage'. A value with x or y
 -- equals to 0 will ever be 0.
 getValue :: IntegralImage -> Point -> Int64
-getValue image (Point x y) | x == 0 || y == 0 = 0
-                           | otherwise        = image ! Point (x-1) (y-1)
+getValue image (Point x y) = image ! (y, x)
+{-# INLINE getValue #-}
 
 -- | Gives the original image\'s size.
-imageSize :: IntegralImage -> Size
-imageSize image =
-    let Point w h = snd $ bounds $ image
-    in Size (w + 1) (h + 1)
+getSize :: IntegralImage -> Size
+getSize image =
+    let (h, w) = snd $ bounds $ image
+    in Size h w
+{-# INLINE getSize #-}
 
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral

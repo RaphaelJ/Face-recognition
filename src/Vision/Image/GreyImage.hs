@@ -1,10 +1,10 @@
 module Vision.Image.GreyImage (
     -- * Types & constructors
-      GreyImage, Pixel (..), create
+      GreyImage, Pixel, create
     -- * Filesystem images manipulations
     , load, save
     -- * Functions
-    , getPixel, getSize, resize,{- drawRectangle,-} imageShape
+    , getPixel, unsafeGetPixel, getSize, resize, drawRectangle, imageShape
     -- * Transforms between greyscale and RGBA images
     , fromRGBA, toRGBA
     ) where
@@ -17,7 +17,7 @@ import Data.Array.Repa (
 
 import qualified Vision.Image.RGBAImage as R
 import Vision.Primitive (
-    Point (..), Size (..), Rect (..), sizeRange
+    Point (..), Size (..), Rect (..)
     )
 
 -- | Greyscale image (y :. x).
@@ -39,7 +39,7 @@ save path = R.save path . toRGBA
 -- | Gets a pixel from the image.
 getPixel :: GreyImage -> Point -> Pixel
 getPixel image (Point x y) = image ! (Z :. y :. x)
-{-# INLINE getPixel #-}
+-- {-# INLINE getPixel #-}
 
 -- | Gets a pixel from the image without checking bounds.
 unsafeGetPixel :: GreyImage -> Point -> Pixel
@@ -78,8 +78,8 @@ drawRectangle image back border (Rect x y w h) =
                 ++ range (Point x (y+1), Point x (y+h-1)) -- Left
                 ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
     backPts = [ (shape, v) |
-            y <- [y..y+h-1], x <- [x..x+w-1]
-            , let !shape = (Z :. y :. x)
+            y' <- [y..y+h-1], x' <- [x..x+w-1]
+            , let !shape = (Z :. y' :. x')
             , let !v = back $ image `unsafeIndex` shape
         ]
 

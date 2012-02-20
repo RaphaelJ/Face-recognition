@@ -11,7 +11,7 @@ import Tests.Config (maxImageSize)
 
 instance Arbitrary Size where
     arbitrary =
-        Size <$> choose (0, maxImageSize) <*> choose (0, maxImageSize)
+        Size <$> choose (1, maxImageSize) <*> choose (1, maxImageSize)
 
 tests = label "sizeRange length" propSizeRangeLength
 
