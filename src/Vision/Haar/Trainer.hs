@@ -45,7 +45,7 @@ instance Classifier HaarClassifier TrainingImage Bool where
 selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Weight)
 selectHaarClassifier tests =
     -- Selects the best classifier over all features.
-    minimumBy (compare `on` snd) bestClassifiers
+    minimumBy weight bestClassifiers
   where
     -- Selects the best classifier for each feature, using parallel computing.
     bestClassifiers =
@@ -53,30 +53,32 @@ selectHaarClassifier tests =
         in parMap parStrategy bestClassifier features
     
     -- Selects the best classifier configuration for a feature.
-    bestClassifier = minimumBy (compare `on` snd) . featureClassifiers
+    bestClassifier = minimumBy weight . featureClassifiers
 
     -- Lists all possibles classifier configurations associated with theirs
     -- error for a feature and the set of tests.
     featureClassifiers feature =
         -- The first computed classifier will give "False" for each test, so
         -- its error score is the weight of valid tests.
-        fst $ foldl' (\(cs, trueError) (v, w) -> 
+        fst $ foldl' (\(cs, trueError) (val, w) -> 
             let trueError' = trueError - w
                 falseError' = 1.0 - trueError'
-                c1 = (HaarClassifier feature v True, trueError')
-                c2 = (HaarClassifier feature v False, falseError')
+                c1 = (HaarClassifier feature val True, trueError')
+                c2 = (HaarClassifier feature val False, falseError')
             in (c1 : c2 : cs, trueError')
         ) ([], weightValid) (featureValuesSorted feature tests)
 
     -- Sums the weight of all valid tests.
     weightValid = sum $ map snd $ filter (tiValid . fst) tests
+    
+    weight = compare `on` weight
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
 featureValuesSorted :: HaarFeature -> [(TrainingImage, Weight)]
                        -> [(Int64, Weight)]
 featureValuesSorted feature =
-    sortBy (compare `on` value) . map computeValue
+    sortBy value . map computeValue
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
@@ -85,7 +87,7 @@ featureValuesSorted feature =
             else -w
         in (compute feature (tiWindow t), w')
     
-    value = fst
+    value = compare `on` fst
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (bad & good).
