@@ -29,8 +29,8 @@ import Vision.Primitives (Size (..), Rect (..))
 
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {
-      tiWindow :: Win
-    , tiValid :: Bool
+      tiWindow :: !Win
+    , tiValid :: !Bool
     }
 
 instance TrainingTest TrainingImage Bool where

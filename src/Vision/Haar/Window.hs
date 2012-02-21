@@ -15,10 +15,10 @@ import Vision.Primitives (Point (..), Size (..), Rect (..))
 
 -- | Used as a structure to iterate an image.
 data Win = Win {
-      wRect :: Rect
-    , wIntegral :: II.IntegralImage
-    , wDeviation :: Int64 -- ^ Int64 to avoid casting
-    , wAvg :: Int64
+      wRect :: !Rect
+    , wIntegral :: !II.IntegralImage
+    , wDeviation :: !Int64 -- ^ Int64 to avoid casting
+    , wAvg :: !Int64
     } deriving (Show)
 
 -- Default window\'s size
@@ -38,7 +38,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
     avg = valuesSum `quot` n
     squaresSum = sumRectangle squaredIntegral
     
-    -- Computes the sum of the rectangle\'s surface using an 'IntegralImage'
+    -- Computes the sum of the windows\'s surface using an 'IntegralImage'
     sumRectangle image =
         -- a ------- b
         -- -         -
@@ -64,6 +64,7 @@ getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
     n = int w * int h
     -- Sum with the window\'s size ratio
     ratio v = v * int windowWidth * int windowHeight `quot` int w `quot` int h
+{-# INLINE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
 -- This way, two sums inside two windows of different size/standard derivation
@@ -72,7 +73,7 @@ normalizeSum :: Win -> Int64 -> Int64 -> Int64
 normalizeSum (Win _ _ deriv avg) n s =
     n * (normalize $ s `quot` n)
   where
-    -- Pixel's value normalized with the double of the standard derivation
+    -- Pixel\'s value normalized with the double of the standard derivation
     -- (95% of pixels values, following the normal distribution), averaged
     -- around 127.
     normalize p = (p - (avg - 2*deriv)) * 255 `quot` (4*deriv)
