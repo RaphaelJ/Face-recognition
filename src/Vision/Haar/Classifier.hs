@@ -8,14 +8,14 @@ module Vision.Haar.Classifier (
 import Data.Int
 
 import AI.Learning.AdaBoost (Classifier (..))
-import Vision.Haar.Features (HaarFeature, compute)
+import Vision.Haar.Feature (HaarFeature, compute)
 import Vision.Haar.Window (Win)
 
 -- | Weak Haar\'s 'Classifier' using a 'HaarFeature' to check an object.
 data HaarClassifier = HaarClassifier {
-      hcFeature :: HaarFeature
-    , hcThreshold :: Int64
-    , hcParity :: Bool -- ^ True -> higher/equal threshold, False -> lower.
+      hcFeature :: !HaarFeature
+    , hcThreshold :: !Int64
+    , hcParity :: !Bool -- ^ True -> higher/equal threshold, False -> lower.
     } deriving (Show, Read)
 
 -- | The 'HaarClassifier' is able to classify a part of an image using its

@@ -10,8 +10,8 @@ module Vision.Haar.Window (
 import Data.Int
 import Data.Word
 
-import qualified Vision.Images.IntegralImage as II
-import Vision.Primitives (Point (..), Size (..), Rect (..))
+import qualified Vision.Image.IntegralImage as II
+import Vision.Primitive (Point (..), Size (..), Rect (..))
 
 -- | Used as a structure to iterate an image.
 data Win = Win {
@@ -33,7 +33,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
     Win rect integral deriv avg
   where
     deriv = max 1 $ round $ sqrt $ double $ (squaresSum `quot` n) - avg^2
-    n = int w * int h
+    n = int64 w * int64 h
     valuesSum = sumRectangle integral
     avg = valuesSum `quot` n
     squaresSum = sumRectangle squaredIntegral
@@ -56,14 +56,14 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
-    ratio $ II.getValue image (Point destX destY)
+    ratio $! II.getValue image (Point destX destY)
   where
     -- New coordinates with the window's ratio
-    destX = winX + (x * w `quot` windowWidth)
-    destY = winY + (y * h `quot` windowHeight)
-    n = int w * int h
+    !destX = winX + (x * w `quot` windowWidth)
+    !destY = winY + (y * h `quot` windowHeight)
+    !n = int64 w * int64 h
     -- Sum with the window\'s size ratio
-    ratio v = v * int windowWidth * int windowHeight `quot` int w `quot` int h
+    ratio v = v * int64 windowWidth * int64 windowHeight `quot` int64 w `quot` int64 h
 {-# INLINE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
@@ -71,7 +71,7 @@ getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
 -- can be compared.
 normalizeSum :: Win -> Int64 -> Int64 -> Int64
 normalizeSum (Win _ _ deriv avg) n s =
-    n * (normalize $ s `quot` n)
+    n * (normalize $! s `quot` n)
   where
     -- Pixel\'s value normalized with the double of the standard derivation
     -- (95% of pixels values, following the normal distribution), averaged
@@ -86,7 +86,7 @@ featuresPos minWidth minHeight =
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
-    let Size w h = II.imageSize integral
+    let Size w h = II.getSize integral
     in [ win rect integral squaredIntegral |
             rect <- rectangles windowWidth windowHeight w h
        ]
@@ -109,7 +109,7 @@ rectangles minWidth minHeight width height =
 
 double :: Integral a => a -> Double
 double = fromIntegral
-int :: Integral a => a -> Int64
-int = fromIntegral
+int64 :: Integral a => a -> Int64
+int64 = fromIntegral
 word16 :: Integral a => a -> Word16
 word16 = fromIntegral

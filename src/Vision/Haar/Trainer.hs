@@ -9,6 +9,8 @@ module Vision.Haar.Trainer (
     , train
     ) where
 
+import Debug.Trace
+
 import Control.Parallel.Strategies
 import Data.Function
 import Data.Int
@@ -21,11 +23,11 @@ import AI.Learning.AdaBoost (
     , Weight, StrongClassifier, adaBoost
     )
 import Vision.Haar.Classifier (HaarClassifier (..))
-import Vision.Haar.Features (HaarFeature, features, compute)
+import Vision.Haar.Feature (HaarFeature, features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
-import Vision.Images.GreyImage (GreyImage, load, resize)
-import Vision.Images.IntegralImage (computeIntegralImage)
-import Vision.Primitives (Size (..), Rect (..))
+import Vision.Image.GreyImage (GreyImage, save, load, resize)
+import Vision.Image.IntegralImage (integralImage)
+import Vision.Primitive (Size (..), Rect (..))
 
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {
@@ -71,7 +73,7 @@ selectHaarClassifier tests =
     -- Sums the weight of all valid tests.
     weightValid = sum $ map snd $ filter (tiValid . fst) tests
     
-    weight = compare `on` weight
+    weight = compare `on` snd
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
@@ -94,9 +96,9 @@ featureValuesSorted feature =
 train :: FilePath -> Int -> FilePath -> IO ()
 train directory steps savePath = do
     putStrLn "Loading images ..."
-    good <- loadIntegral True (directory </> "good")
+    good <- loadIntegrals True (directory </> "good")
     putStrLn "\tgood/ loaded"
-    bad <- loadIntegral False (directory </> "bad")
+    bad <- loadIntegrals False (directory </> "bad")
     putStrLn "\tbad/ loaded"
     let tests = good ++ bad
 
@@ -106,9 +108,8 @@ train directory steps savePath = do
 
     putStrLn "Save classifier ..."
     writeFile savePath $ show classifier
-
   where
-    loadIntegral valid = fmap (trainingImages valid) . loadImages
+    loadIntegrals valid = fmap (trainingImages valid) . loadImages
 
     loadImages dir = do
         paths <- getDirectoryContents $ dir
@@ -128,7 +129,7 @@ trainingImages valid = map trainingImage
   where
     rect = Rect 0 0 windowWidth windowHeight
     trainingImage image =
-        let int = computeIntegralImage image id
-            squaredInt = computeIntegralImage image (^2)
-            window = win rect int squaredInt
+        let ii = integralImage image id
+            squaredIi = integralImage image (^2)
+            window = win rect ii squaredIi
         in TrainingImage window valid

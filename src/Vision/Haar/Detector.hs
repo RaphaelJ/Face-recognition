@@ -8,7 +8,7 @@ module Vision.Haar.Detector (
 import System.FilePath (FilePath)
 
 import AI.Learning.AdaBoost (Classifier (..), StrongClassifier)
-import Vision.Haar.HaarClassifier (HaarClassifier)
+import Vision.Haar.Classifier (HaarClassifier)
 import Vision.Haar.Window (wRect, windows)
 import Vision.Image.GreyImage (GreyImage, load, save, drawRectangle)
 import Vision.Image.IntegralImage (computeIntegralImage)

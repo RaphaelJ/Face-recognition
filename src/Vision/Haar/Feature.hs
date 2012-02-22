@@ -1,4 +1,4 @@
-module Vision.Haar.Features (
+module Vision.Haar.Feature (
     -- * Types & constructors
       HaarFeature (..)
     -- * Functions
@@ -8,8 +8,7 @@ module Vision.Haar.Features (
 import Data.Int
     
 import qualified Vision.Haar.Window as W
-import Vision.Images.IntegralImage (IntegralImage, computeIntegralImage)
-import Vision.Primitives (Point (..), Rect (..))
+import Vision.Primitive (Point (..), Rect (..))
 
 data HaarFeature = TwoVertRect Rect
                  | TwoHorizRect Rect
