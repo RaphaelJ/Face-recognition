@@ -1,3 +1,7 @@
+import System (getArgs)
+
 import Vision.Haar.Trainer
 
-main = train "../data/" 10 "../classifier.cl"
+main = do
+    steps <- fmap (read . head) getArgs
+    train "../data/learning_faces_small/" steps "../data/classifier.cl"
