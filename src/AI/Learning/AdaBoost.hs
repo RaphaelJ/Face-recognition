@@ -12,6 +12,8 @@ module AI.Learning.AdaBoost (
     , adaBoost
     ) where
 
+import Debug.Trace
+    
 import Data.Function
 import Data.List
 import qualified Data.Map as M
@@ -51,16 +53,16 @@ instance (Classifier weak t cl, Ord cl)
       where
         -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes with score.
-        classesScores = M.toList $ foldl' scoreAcc M.empty cs
-        scoreAcc mapAcc (WeakClassifier c w) =
-            M.insertWith' (+) (cClass c test) w mapAcc
+        classesScores = M.toList $ foldl' step M.empty cs
+        step acc (WeakClassifier c w) =
+            M.insertWith' (+) (cClass c test) w acc
 
 -- | Trains a strong classifier from a weak classifier selector and a set of
 -- tests.
 -- The selector gets a list of tests associated with a weight and return the
 -- best weak classifier with an error score, wich is the sum of failed tests.
 -- The weak classifier must be able to classify the tests.
-adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl)
+adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl, Show cl)
          => Int -> [t] ->
             -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.
@@ -69,19 +71,20 @@ adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl)
 adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
   where
-    -- Groups the tests per class.
-    groupedTests =
-        let tClassEq = (==) `on` tClass
-            tClassCompare = compare `on` tClass
-        in groupBy tClassEq $ sortBy tClassCompare initTests
-
     -- Sets an initial weight for each test.
     -- Test's weight = 100% / n classes / n tests for this class.
-    initTests' =
-        let classesWeights = 1.0 / fromIntegral (length groupedTests)
-            testsWeight tests = classesWeights / fromIntegral (length tests)
-            testsWithWeights tests = map (\t -> (t, testsWeight tests)) tests
-        in concatMap testsWithWeights groupedTests
+    initTests' = concatMap testsWeights groupedTests
+
+    classesWeights = 1.0 / fromIntegral (length groupedTests)
+    testsWeights tests =
+        let weight = classesWeights / fromIntegral (length tests)
+        in map (\t -> (t, weight)) tests
+
+    -- Groups the tests per class.
+    groupedTests = groupBy tClassEq $ sortBy tClassCompare initTests
+
+    tClassEq = (==) `on` tClass
+    tClassCompare = compare `on` tClass
         
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers weakSelector tests =

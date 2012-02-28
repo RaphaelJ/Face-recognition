@@ -5,6 +5,8 @@ module Vision.Haar.Feature (
     , compute, features
     ) where
 
+import Debug.Trace
+    
 import Data.Int
     
 import qualified Vision.Haar.Window as W
@@ -18,7 +20,7 @@ data HaarFeature = TwoVertRect Rect
     deriving (Show, Read, Eq)
 
 compute :: HaarFeature -> W.Win -> Int64
-compute (TwoVertRect (Rect x y w h)) win =
+compute r@(TwoVertRect (Rect x y w h)) win =
     -- a ------- b
     -- -         -
     -- -   S1    -
@@ -35,10 +37,10 @@ compute (TwoVertRect (Rect x y w h)) win =
         d = W.getValue win (Point (x+w) (y+h'))
         e = W.getValue win (Point x (y+h))
         f = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        normalize = id -- W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
-    in s2 - s1
+    in trace (show e ++ " " ++ show f ++ " "++ show d) $ s2 - s1
     
 compute (TwoHorizRect (Rect x y w h)) win =
     -- a ------- b ------- c
@@ -102,7 +104,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
         f = W.getValue win (Point (x+w') (y+h))
         g = W.getValue win (Point (x+w'+w') (y+h))
         h'' = W.getValue win (Point (x+w) (y+h))
-        normalize = id -- W.normalizeSum win (int64 w * int64 h)
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ f + a - b - e
         s2 = normalize $ g + b - c - f
         s3 = normalize $ h'' + c - d - g
@@ -139,11 +141,11 @@ compute (FourRect (Rect x y w h)) win =
 -- | List all features inside a standard window.
 features :: [HaarFeature]
 features =
---     map TwoVertRect (W.featuresPos 1 2) ++
---     map TwoHorizRect (W.featuresPos 2 1) ++
---     map ThreeVertRect (W.featuresPos 1 3) ++
-    map ThreeHorizRect (W.featuresPos 3 1){- ++-}
---     map FourRect (W.featuresPos 2 2)
+    map TwoVertRect (W.featuresPos 1 2) {-++
+    map TwoHorizRect (W.featuresPos 2 1) ++
+    map ThreeVertRect (W.featuresPos 1 3) ++
+    map ThreeHorizRect (W.featuresPos 3 1) ++
+    map FourRect (W.featuresPos 2 2)-}
 
 int64 :: (Integral a) => a -> Int64
 int64 = fromIntegral

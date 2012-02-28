@@ -7,6 +7,8 @@ module Vision.Haar.Window (
     , getValue, normalizeSum, featuresPos, windows
     ) where
 
+import Debug.Trace
+
 import Data.Int
 import Data.Word
 
@@ -56,7 +58,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
-    ratio $! II.getValue image (Point destX destY)
+    {-ratio $! -} trace (show $ Point destX destY) $ II.getValue image (Point destX destY)
   where
     -- New coordinates with the window's ratio
     !destX = winX + (x * w `quot` windowWidth)

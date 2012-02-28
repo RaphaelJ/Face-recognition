@@ -52,7 +52,7 @@ selectHaarClassifier tests =
     -- Selects the best classifier for each feature, using parallel computing.
     bestClassifiers =
         let parStrategy = evalTuple2 rseq rseq
-        in parMap parStrategy bestClassifier features
+        in parMap parStrategy bestClassifier [ head features ]
     
     -- Selects the best classifier configuration for a feature.
     bestClassifier = minimumBy weight . featureClassifiers
@@ -60,18 +60,18 @@ selectHaarClassifier tests =
     -- Lists all possibles classifier configurations associated with theirs
     -- error for a feature and the set of tests.
     featureClassifiers feature =
-        -- The first computed classifier will give "False" for each test, so
-        -- its error score is the weight of valid tests.
+        -- The first computed classifier will give "True" for each test, so its
+        -- error score is the weight of invalid tests.
         fst $ foldl' (\(cs, trueError) (val, w) -> 
-            let trueError' = trueError - w
-                falseError' = 1.0 - trueError'
-                c1 = (HaarClassifier feature val True, trueError')
-                c2 = (HaarClassifier feature val False, falseError')
+            let falseError = 1.0 - trueError
+                c1 = (HaarClassifier feature val True, trueError)
+                c2 = (HaarClassifier feature val False, falseError)
+                trueError' = trueError - w
             in (c1 : c2 : cs, trueError')
-        ) ([], weightValid) (featureValuesSorted feature tests)
+        ) ([], weightInvalid) (featureValuesSorted feature tests)
 
-    -- Sums the weight of all valid tests.
-    weightValid = sum $ map snd $ filter (tiValid . fst) tests
+    -- Sums the weight of all non valid tests.
+    weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
     
     weight = compare `on` snd
 
