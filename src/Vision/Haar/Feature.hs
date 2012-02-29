@@ -40,7 +40,7 @@ compute r@(TwoVertRect (Rect x y w h)) win =
         normalize = id -- W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
-    in trace (show e ++ " " ++ show f ++ " "++ show d) $ s2 - s1
+    in s2 - s1
     
 compute (TwoHorizRect (Rect x y w h)) win =
     -- a ------- b ------- c

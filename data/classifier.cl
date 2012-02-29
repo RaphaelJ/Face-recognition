@@ -1,1 +1,1 @@
-StrongClassifier {scClassifiers = [WeakClassifier {wcClassifier = HaarClassifier {hcFeature = TwoVertRect (Rect {rX = 0, rY = 0, rWidth = 1, rHeight = 2}), hcThreshold = 0, hcParity = False}, wcWeight = 15.697233158856134}]}
+StrongClassifier {scClassifiers = [WeakClassifier {wcClassifier = HaarClassifier {hcFeature = TwoVertRect (Rect {rX = 20, rY = 10, rWidth = 1, rHeight = 12}), hcThreshold = -227, hcParity = True}, wcWeight = 0.5766315064105503}]}

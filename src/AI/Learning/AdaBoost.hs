@@ -92,7 +92,7 @@ selectClassifiers weakSelector tests =
   where
     (c, cError) = weakSelector tests
     
-    cWeight = 0.5 * (log $ (1-cError) / cError)
+    cWeight = 0.5 * (log $ (1.0-cError) / cError)
 
     -- Reduces the weight of positive tests, increment the weight of negative
     -- tests.
