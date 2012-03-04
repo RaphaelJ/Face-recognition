@@ -80,7 +80,8 @@ selectHaarClassifier tests =
     testF feature val =
         let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
             n = length $ tests
-        in (n, goods)
+            valids = length $ filter (\(i, w) -> tiValid i) $ tests
+        in (n, goods, valids, val)
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
