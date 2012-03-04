@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Vision.Image.RGBAImage (
     -- * Types & constructors

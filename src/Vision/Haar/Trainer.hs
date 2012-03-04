@@ -66,9 +66,9 @@ selectHaarClassifier tests =
             let falseError = 1.0 - trueError
                 c1 = (HaarClassifier feature val True, trueError)
 --                 c2 = (HaarClassifier feature val False, falseError)
-                trueError' = if trueError - w < 0
-                                then trace (show $ trueError - w) $ trueError - w
-                                else trueError - w
+                trueError' = if trueError + w < 0
+                                then trace (show $ testF feature val) $ trueError + w
+                                else trueError + w
             in (c1 {-: c2-} : cs, trueError')
         ) ([], weightInvalid) (featureValuesSorted feature tests)
 
@@ -76,6 +76,11 @@ selectHaarClassifier tests =
     weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
     
     weight = compare `on` snd
+
+    testF feature val =
+        let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
+            n = length $ tests
+        in (n, goods)
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.

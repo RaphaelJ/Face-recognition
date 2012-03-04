@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Vision.Haar.Window (
     -- * Types & constructors
       Win (..), win

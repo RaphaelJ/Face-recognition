@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Vision.Image.GreyImage (
     -- * Types & constructors
       GreyImage, Pixel, create
