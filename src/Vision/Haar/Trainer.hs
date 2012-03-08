@@ -56,18 +56,18 @@ selectHaarClassifier tests =
     
     -- Selects the best classifier configuration for a feature.
     bestClassifier = minimumBy weight . featureClassifiers
-
+    
     -- Lists all possibles classifier configurations associated with theirs
     -- error for a feature and the set of tests.
     featureClassifiers feature =
         -- The first computed classifier will give "True" for each test, so its
         -- error score is the weight of invalid tests.
-        fst $ foldl' (\(cs, trueError) (val, w) -> 
+        fst $ foldl' (\(cs, trueError) (val, w) ->
             let falseError = 1.0 - trueError
                 c1 = (HaarClassifier feature val True, trueError)
 --                 c2 = (HaarClassifier feature val False, falseError)
                 trueError' = if trueError + w < 0
-                                then trace (show $ testF feature val) $ trueError + w
+                                then trace (show (testF feature val) ++ " " ++ show (trueError + w)) $ trueError + w
                                 else trueError + w
             in (c1 {-: c2-} : cs, trueError')
         ) ([], weightInvalid) (featureValuesSorted feature tests)
@@ -79,8 +79,10 @@ selectHaarClassifier tests =
 
     testF feature val =
         let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
+            score = sum $ map snd $ filter (\(t, w) -> val < t) $ featureValuesSorted feature tests
+            ns = length $ filter (\(t, w) -> val >= t) $ featureValuesSorted feature tests
             n = length $ tests
-        in (n, goods)
+        in (n, goods, score, ns)
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
