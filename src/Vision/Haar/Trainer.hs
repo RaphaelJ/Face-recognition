@@ -82,7 +82,8 @@ selectHaarClassifier tests =
             score = sum $ map snd $ filter (\(t, w) -> val < t) $ featureValuesSorted feature tests
             ns = length $ filter (\(t, w) -> val >= t) $ featureValuesSorted feature tests
             n = length $ tests
-        in (n, goods, score, ns)
+            valids = length $ filter (\(i, w) -> tiValid i) $ tests
+        in (n, goods, valids, val)
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
