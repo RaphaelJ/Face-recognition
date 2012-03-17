@@ -62,13 +62,14 @@ selectHaarClassifier tests =
     featureClassifiers feature =
         -- The first computed classifier will give "True" for each test, so its
         -- error score is the weight of invalid tests.
-        fst $ foldl' (\(cs, trueError) (val, w) ->
+        fst $ foldl' (\(cs, trueError) (value, w, valid) ->
             let falseError = 1.0 - trueError
-                c1 = (HaarClassifier feature val True, trueError)
---                 c2 = (HaarClassifier feature val False, falseError)
-                trueError' = if trueError + w < 0
-                                then trace (show (testF feature val) ++ " " ++ show (trueError + w)) $ trueError + w
-                                else trueError + w
+                c1 = (HaarClassifier feature value True, trueError)
+--                 c2 = (HaarClassifier feature value False, falseError)
+                trueError' =
+                    if valid
+                       then trueError + w
+                       else trueError - w
             in (c1 {-: c2-} : cs, trueError')
         ) ([], weightInvalid) (featureValuesSorted feature tests)
 
@@ -77,29 +78,26 @@ selectHaarClassifier tests =
     
     weight = compare `on` snd
 
-    testF feature val =
-        let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
-            score = sum $ map snd $ filter (\(t, w) -> val < t) $ featureValuesSorted feature tests
-            ns = length $ filter (\(t, w) -> val >= t) $ featureValuesSorted feature tests
-            n = length $ tests
-            valids = length $ filter (\(i, w) -> tiValid i) $ tests
-        in (n, goods, valids, val)
+--     testF feature val =
+--         let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
+--             score = sum $ map snd $ filter (\(t, w) -> val < t) $ featureValuesSorted feature tests
+--             ns = length $ filter (\(t, w) -> val >= t) $ featureValuesSorted feature tests
+--             n = length $ tests
+--             valids = length $ filter (\(i, w) -> tiValid i) $ tests
+--         in (n, goods, valids, val)
 
 -- | Computes all feature\'s values with a set of tests, sorted.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
 featureValuesSorted :: HaarFeature -> [(TrainingImage, Weight)]
-                       -> [(Int64, Weight)]
+                       -> [(Int64, Weight, Bool)]
 featureValuesSorted feature tests =
     sortBy value $ map computeValue tests
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
-        let w' = if tiValid t
-            then w
-            else -w
-        in (compute feature (tiWindow t), w')
+        (compute feature (tiWindow t), w, tiValid t)
     
-    value = compare `on` fst
+    value (v1, _, _) (v2, _, _) = v1 `compare` v2
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (bad & good).
