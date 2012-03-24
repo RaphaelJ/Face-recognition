@@ -47,14 +47,15 @@ instance Classifier HaarClassifier TrainingImage Bool where
 selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Weight)
 selectHaarClassifier tests =
     -- Selects the best classifier over all features.
-    minimumBy weight bestClassifiers
+    let m = minimumBy weight bestClassifiers
+    in trace (show $ errorLevel m) m
   where
     -- Selects the best classifier for each feature, using parallel computing.
     bestClassifiers =
         let parStrategy = evalTuple2 rseq rseq
         in parMap parStrategy bestClassifier features
     
-    -- Selects the best classifier configuration for a feature.
+    -- Selects the best classifier threshold for a feature.
     bestClassifier = minimumBy weight . featureClassifiers
     
     -- Lists all possibles classifier configurations associated with theirs
@@ -73,6 +74,12 @@ selectHaarClassifier tests =
             in (c1 {-: c2-} : cs, trueError')
         ) ([], weightInvalid) (featureValuesSorted feature tests)
 
+    errorLevel (classifier, e) =
+        let ok = sum $ map snd $ filter (\t -> (classifier `cClass` fst t) == tiValid (fst t)) tests
+            total = sum $ map snd $ tests
+            total' = sum $ map (\(a, b, c) -> b) $ featureValuesSorted (hcFeature classifier) tests
+        in (ok, total, e, total', take 15 $ featureValuesSorted (hcFeature classifier) tests)
+    
     -- Sums the weight of all non valid tests.
     weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
     
