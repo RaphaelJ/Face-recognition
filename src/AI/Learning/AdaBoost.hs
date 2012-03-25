@@ -97,7 +97,7 @@ selectClassifiers weakSelector tests =
     -- Reduces the weight of positive tests, increment the weight of negative
     -- tests.
     tests' = normalizeWeights $ flip map tests $ \(t, w) ->
-        if cClass c t == tClass t
+        if c `cClass` t == tClass t
             then (t, w * exp (-cWeight))
             else (t, w * exp cWeight)
 

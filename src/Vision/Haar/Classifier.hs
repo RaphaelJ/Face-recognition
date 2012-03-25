@@ -15,13 +15,13 @@ import Vision.Haar.Window (Win)
 data HaarClassifier = HaarClassifier {
       hcFeature :: !HaarFeature
     , hcThreshold :: !Int64
-    , hcParity :: !Bool -- ^ True -> higher/equal threshold, False -> lower.
+    , hcParity :: !Bool -- ^ True: higher/equal than threshold, False: lower.
     } deriving (Show, Read)
 
 -- | The 'HaarClassifier' is able to classify a part of an image using its
 -- iteration window.
 instance Classifier HaarClassifier Win Bool where
-    cClass (HaarClassifier feature thres parity) window =
+    HaarClassifier feature thres parity `cClass` window =
         let val = compute feature window
         in if parity
               then val >= thres

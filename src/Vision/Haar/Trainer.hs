@@ -39,7 +39,7 @@ instance TrainingTest TrainingImage Bool where
     tClass = tiValid
 
 instance Classifier HaarClassifier TrainingImage Bool where
-    cClass classifier image = cClass classifier (tiWindow image)
+    classifier `cClass` image = classifier `cClass` tiWindow image
 
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
@@ -71,14 +71,16 @@ selectHaarClassifier tests =
                     if valid
                        then trueError + w
                        else trueError - w
-            in (c1 {-: c2-} : cs, trueError')
+                
+            in trace (show $ (trueError - (sum $ map snd $ filter (\(t, w) -> fst c1 `cClass` t /= tiValid t) tests))) $ (c1 {-: c2-} : cs, trueError')
         ) ([], weightInvalid) (featureValuesSorted feature tests)
 
-    errorLevel (classifier, e) =
-        let ok = sum $ map snd $ filter (\t -> (classifier `cClass` fst t) == tiValid (fst t)) tests
+    errorLevel (classifier@(HaarClassifier feature value parity), e) =
+        let ok = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t == tiValid t) tests
+            bad = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t /= tiValid t) tests
             total = sum $ map snd $ tests
-            total' = sum $ map (\(a, b, c) -> b) $ featureValuesSorted (hcFeature classifier) tests
-        in (ok, total, e, total', take 15 $ featureValuesSorted (hcFeature classifier) tests)
+            weights = sum $ map (\(a, b, c) -> b) $ featureValuesSorted feature tests
+        in (ok, bad, total, weights)
     
     -- Sums the weight of all non valid tests.
     weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
