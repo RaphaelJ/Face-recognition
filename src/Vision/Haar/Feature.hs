@@ -5,8 +5,6 @@ module Vision.Haar.Feature (
     , compute, features
     ) where
 
-import Debug.Trace
-    
 import Data.Int
     
 import qualified Vision.Haar.Window as W

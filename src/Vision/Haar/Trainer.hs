@@ -63,24 +63,18 @@ selectHaarClassifier tests =
     featureClassifiers feature =
         -- The first computed classifier will give "True" for each test, so its
         -- error score is the weight of invalid tests.
-        fst $ foldl' (\(cs, trueError) (value, w, valid) ->
+        fst $ foldl' (\(cs, trueError) (value, weights) ->
             let falseError = 1.0 - trueError
                 c1 = (HaarClassifier feature value True, trueError)
 --                 c2 = (HaarClassifier feature value False, falseError)
-                trueError' =
-                    if valid
-                       then trueError + w
-                       else trueError - w
+                trueError' = trueError + (sum weights)
                 
-            in trace (show $ (trueError - (sum $ map snd $ filter (\(t, w) -> fst c1 `cClass` t /= tiValid t) tests))) $ (c1 {-: c2-} : cs, trueError')
-        ) ([], weightInvalid) (featureValuesSorted feature tests)
+            in (c1 {-: c2-} : cs, trueError')
+        ) ([], weightInvalid) (featureValues feature tests)
 
     errorLevel (classifier@(HaarClassifier feature value parity), e) =
-        let ok = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t == tiValid t) tests
-            bad = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t /= tiValid t) tests
-            total = sum $ map snd $ tests
-            weights = sum $ map (\(a, b, c) -> b) $ featureValuesSorted feature tests
-        in (ok, bad, total, weights)
+        let bad = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t /= tiValid t) tests
+        in (e, bad, abs $ e - bad)
     
     -- Sums the weight of all non valid tests.
     weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
@@ -95,18 +89,23 @@ selectHaarClassifier tests =
 --             valids = length $ filter (\(i, w) -> tiValid i) $ tests
 --         in (n, goods, valids, val)
 
--- | Computes all feature\'s values with a set of tests, sorted.
+-- | Computes all feature\'s values with a set of tests, sorted and grouped by
+-- value.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
-featureValuesSorted :: HaarFeature -> [(TrainingImage, Weight)]
-                       -> [(Int64, Weight, Bool)]
-featureValuesSorted feature tests =
-    sortBy value $ map computeValue tests
+featureValues :: HaarFeature -> [(TrainingImage, Weight)]
+                       -> [(Int64, [Weight])]
+featureValues feature =
+    groupByValue . sortBy (compare `on` fst) . map computeValue
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
-        (compute feature (tiWindow t), w, tiValid t)
-    
-    value (v1, _, _) (v2, _, _) = v1 `compare` v2
+        let w' = if tiValid t then w else -w
+        in (compute feature (tiWindow t), w')
+
+    -- Groups the same values in a tuple containing the value and the list of
+    -- weights.
+    groupByValue =
+        map (\((v, w) : xs) -> (v, w : map snd xs)) . groupBy ((==) `on` fst)
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (bad & good).

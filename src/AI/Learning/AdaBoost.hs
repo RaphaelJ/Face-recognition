@@ -21,7 +21,7 @@ import qualified Data.Map as M
 type Weight = Double
 
 -- | Represents an instance of a testable item (image ...) with a method to gets
--- its class identifier (i.e. Bool for binary classes, ).
+-- its class identifier (i.e. Bool for binary classes, ...).
 class TrainingTest t cl | t -> cl where
     tClass :: t -> cl -- ^ Gives the class identifier of the test
 
