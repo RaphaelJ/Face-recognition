@@ -5,7 +5,9 @@ module Vision.Image.IntegralImage (
     , integralImage, getValue, getSize
     ) where
 
-import Data.Array (Array, (!), array, bounds)
+import Debug.Trace
+
+import Data.Array (Array, (!), array, bounds, elems)
 import Data.Int
 
 import qualified Vision.Image.GreyImage as G
@@ -34,7 +36,6 @@ integralImage image f =
     
     Size w h = G.getSize image
     value x y = int64 $! f $! image `G.getPixel` Point x y
-    
 {-# INLINABLE integralImage #-}
 
 -- | Gets the value of a point inside an 'IntegralImage'. A value with x or y
@@ -47,7 +48,7 @@ getValue image (Point x y) = image ! (y, x)
 getSize :: IntegralImage -> Size
 getSize image =
     let (h, w) = snd $ bounds $ image
-    in Size h w
+    in Size w h
 {-# INLINE getSize #-}
 
 int64 :: Integral a => a -> Int64

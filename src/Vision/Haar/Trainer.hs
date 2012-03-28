@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Vision.Haar.Trainer (
     -- * Types & constructors
@@ -64,12 +65,12 @@ selectHaarClassifier tests =
         -- The first computed classifier will give "True" for each test, so its
         -- error score is the weight of invalid tests.
         fst $ foldl' (\(cs, trueError) (value, weights) ->
-            let falseError = 1.0 - trueError
-                c1 = (HaarClassifier feature value True, trueError)
---                 c2 = (HaarClassifier feature value False, falseError)
-                trueError' = trueError + (sum weights)
+            let c1 = (HaarClassifier feature value True, trueError)
+                falseError = 1.0 - trueError
+                c2 = (HaarClassifier feature value False, falseError)
                 
-            in (c1 {-: c2-} : cs, trueError')
+                trueError' = trueError + (sum weights)
+            in (c1 : c2 : cs, trueError')
         ) ([], weightInvalid) (featureValues feature tests)
 
     errorLevel (classifier@(HaarClassifier feature value parity), e) =
@@ -77,7 +78,7 @@ selectHaarClassifier tests =
         in (e, bad, abs $ e - bad)
     
     -- Sums the weight of all non valid tests.
-    weightInvalid = sum $ map snd $ filter (not . tiValid . fst) tests
+    !weightInvalid = sum $! map snd $! filter (not . tiValid . fst) tests
     
     weight = compare `on` snd
 
@@ -99,8 +100,9 @@ featureValues feature =
   where
     -- Computes the feature value and its weight.
     computeValue (t, w) =
-        let w' = if tiValid t then w else -w
-        in (compute feature (tiWindow t), w')
+        let !w' = if tiValid t then w else -w
+            !v = compute feature (tiWindow t)
+        in (v, w')
 
     -- Groups the same values in a tuple containing the value and the list of
     -- weights.

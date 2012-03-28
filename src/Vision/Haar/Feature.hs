@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Vision.Haar.Feature (
     -- * Types & constructors
       HaarFeature (..)
@@ -35,7 +37,7 @@ compute r@(TwoVertRect (Rect x y w h)) win =
         d = W.getValue win (Point (x+w) (y+h'))
         e = W.getValue win (Point x (y+h))
         f = W.getValue win (Point (x+w) (y+h))
-        normalize = id -- W.normalizeSum win (int64 w * int64 h)
+        normalize = W.normalizeSum win (int64 w * int64 h)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
     in s2 - s1
@@ -135,11 +137,12 @@ compute (FourRect (Rect x y w h)) win =
         s3 = normalize $ h'' + d - e - g
         s4 = normalize $ i + e - f - h''
     in s1 + s4 - s2 - s3
+{-# INLINE compute #-}
 
 -- | List all features inside a standard window.
 features :: [HaarFeature]
 features =
-    map TwoVertRect (W.featuresPos 1 2) {-++
+    map TwoVertRect (W.featuresPos 1 2){- ++
     map TwoHorizRect (W.featuresPos 2 1) ++
     map ThreeVertRect (W.featuresPos 1 3) ++
     map ThreeHorizRect (W.featuresPos 3 1) ++
