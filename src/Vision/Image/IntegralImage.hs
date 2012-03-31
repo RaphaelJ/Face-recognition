@@ -4,7 +4,7 @@ module Vision.Image.IntegralImage (
     -- * Type
       IntegralImage (..), Pixel
     -- * Functions 
-    , integralImage, imageShape
+    , integralImage, sumRectangle, imageShape
     ) where
 
 import Debug.Trace
@@ -14,14 +14,14 @@ import Data.Int
 
 import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
-import Vision.Primitive (Point (..), Size (..))
+import Vision.Primitive (Point (..), Size (..), Rect (..))
 
 newtype IntegralImage = IntegralImage (Array (Int, Int) Int64)
-    deriving (Show, Read)
+    deriving (Show, Eq)
 type Pixel = Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
-integralImage :: Integral a => G.GreyImage -> (G.Pixel -> a) -> IntegralImage
+integralImage :: G.GreyImage -> (Int64 -> Int64) -> IntegralImage
 integralImage image f =
     IntegralImage $ integral
   where
@@ -40,7 +40,7 @@ integralImage image f =
         ]
 
     Size w h = I.getSize image
-    value x y = int64 $ f $ image `I.getPixel` Point x y
+    value x y = f $ int64 $ image `I.getPixel` Point x y
 {-# INLINABLE integralImage #-}
 
 instance I.Image IntegralImage Int64 where
@@ -53,6 +53,20 @@ instance I.Image IntegralImage Int64 where
 
     IntegralImage image `getPixel` Point x y =
        image ! (y, x)
+       
+-- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
+sumRectangle integral (Rect x y w h) =
+    -- a ------- b
+    -- -         -
+    -- -    S    -
+    -- -         -
+    -- c ------- d
+    let a = integral `I.getPixel` Point x y
+        b = integral `I.getPixel` Point (x+w) y
+        c = integral `I.getPixel` Point x (y+h)
+        d = integral `I.getPixel` Point (x+w) (y+h)
+    in d + a - b - c
+{-# INLINE sumRectangle #-}
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> ((Int, Int), (Int, Int))

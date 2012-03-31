@@ -12,6 +12,7 @@ module Vision.Image (
 import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
 
 -- | The 'Image' class represents images with pixels of type p.
+-- 'Image's are 0 indexed.
 -- 
 -- Minimal complete definition: 'fromList', 'getSize' and
 -- 'getPixel'.

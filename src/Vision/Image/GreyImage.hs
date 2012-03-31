@@ -23,7 +23,7 @@ import Vision.Primitive (
 
 -- | Greyscale image (y :. x).
 newtype GreyImage = GreyImage (Array DIM2 Word8)
-    deriving (Show)
+    deriving (Show, Eq)
 type Pixel = Word8
 
 instance I.Image GreyImage Word8 where
@@ -62,7 +62,7 @@ pixFromRGBA (R.Pixel r g b a) =
     let r' = int r * 30
         g' = int g * 59
         b' = int b * 11
-    in word8 $ (r + g + b) `quot` 100
+    in word8 $ (r' + g' + b') `quot` 100
 
 pixToRGBA pix = R.Pixel pix pix pix 255
 

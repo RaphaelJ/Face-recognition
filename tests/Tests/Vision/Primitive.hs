@@ -3,6 +3,8 @@ module Tests.Vision.Primitive (
     ) where
 
 import Control.Applicative
+
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.QuickCheck
 
 import Vision.Primitive (Size (..), sizeRange)
@@ -13,7 +15,9 @@ instance Arbitrary Size where
     arbitrary =
         Size <$> choose (1, maxImageSize) <*> choose (1, maxImageSize)
 
-tests = label "sizeRange length" propSizeRangeLength
+tests = [
+      testProperty "sizeRange length" propSizeRangeLength
+    ]
 
 propSizeRangeLength :: Size -> Bool
 propSizeRangeLength size@(Size w h) =

@@ -21,10 +21,10 @@ import Vision.Primitive (Point (..), Size (..))
 
 -- | RGBA image (y :. x :. channel).
 newtype RGBAImage = RGBAImage (Array DIM3 Word8)
-    deriving (Show)
+    deriving (Show, Eq)
 data Pixel = Pixel {
     red :: !Word8, green :: !Word8, blue :: !Word8, alpha :: !Word8
-    } deriving (Show, Read)
+    } deriving (Show, Read, Eq)
 
 instance I.Image RGBAImage Pixel where
     fromList size xs =

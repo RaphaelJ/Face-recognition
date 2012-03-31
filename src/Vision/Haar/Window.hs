@@ -35,26 +35,13 @@ windowHeight = 24
 -- average pixels' value.
 win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect x y w h) integral squaredIntegral =
-    Win rect integral deriv avg
+    traceShow (n, avg, deriv, valuesSum, squaresSum) $ Win rect integral deriv avg
   where
     deriv = max 1 $ round $ sqrt $ double $ (squaresSum `quot` n) - avg^2
     n = int64 w * int64 h
-    valuesSum = sumRectangle integral
+    valuesSum = II.sumRectangle integral rect
     avg = valuesSum `quot` n
-    squaresSum = sumRectangle squaredIntegral
-    
-    -- Computes the sum of the windows\'s surface using an 'IntegralImage'
-    sumRectangle image =
-        -- a ------- b
-        -- -         -
-        -- -    S    -
-        -- -         -
-        -- c ------- d
-        let a = image `I.getPixel` Point x y
-            b = image `I.getPixel` Point (x+w) y
-            c = image `I.getPixel` Point x (y+h)
-            d = image `I.getPixel` Point (x+w) (y+h)
-        in d + a - b - c
+    squaresSum = II.sumRectangle squaredIntegral rect
 
 -- | Gets the value of a point (as in the default window) inside the window,
 -- takes care of the window\'s size ratio, so two points in two windows of
