@@ -26,8 +26,9 @@ import AI.Learning.AdaBoost (
 import Vision.Haar.Classifier (HaarClassifier (..))
 import Vision.Haar.Feature (HaarFeature, features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
-import Vision.Image.GreyImage (GreyImage, save, load, resize)
-import Vision.Image.IntegralImage (integralImage)
+import qualified Vision.Image as I
+import qualified Vision.Image.GreyImage as G
+import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Size (..), Rect (..))
 
 -- | Contains a training image with its 'IntegralImage'.
@@ -134,20 +135,21 @@ train directory steps savePath = do
         mapM (loadImage . (dir </>)) (excludeHidden paths)
 
     loadImage path = do
-        img <- load path
-        return $ resize img $ Size windowWidth windowHeight
+        img <- I.load path
+        return $ I.resize img $ Size windowWidth windowHeight
 
     excludeHidden = filter $ ((/=) '.') . head
 
 -- | Accepts a list of images with a boolean indicating if the image is valid.
 -- Compute the 'IntegralImage' and initialises a full image 'Win' for each
 -- image.
-trainingImages :: Bool -> [GreyImage] -> [TrainingImage]
-trainingImages valid = map trainingImage
+trainingImages :: Bool -> [G.GreyImage] -> [TrainingImage]
+trainingImages valid =
+    map trainingImage
   where
     rect = Rect 0 0 windowWidth windowHeight
     trainingImage image =
-        let ii = integralImage image id
-            squaredIi = integralImage image (^2)
+        let ii = II.integralImage image id
+            squaredIi = II.integralImage image (^2)
             window = win rect ii squaredIi
         in TrainingImage window valid

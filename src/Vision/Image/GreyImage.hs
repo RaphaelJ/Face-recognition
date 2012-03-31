@@ -1,114 +1,70 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Vision.Image.GreyImage (
     -- * Types & constructors
-      GreyImage, Pixel, create
-    -- * Filesystem images manipulations
-    , load, save
+      GreyImage (..), Pixel
     -- * Functions
-    , getPixel, unsafeGetPixel, getSize, resize, drawRectangle, imageShape
-    -- * Transforms between greyscale and RGBA images
-    , fromRGBA, toRGBA
+    , fromRGBA, toRGBA, imageShape
     ) where
 
 import Data.Word
 
 import Data.Array.Repa (
       Array, DIM2, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent, (//)
+    , fromFunction
     )
 
+import qualified Vision.Image as I
 import qualified Vision.Image.RGBAImage as R
 import Vision.Primitive (
     Point (..), Size (..), Rect (..)
     )
 
 -- | Greyscale image (y :. x).
-type GreyImage = Array DIM2 Pixel
+newtype GreyImage = GreyImage (Array DIM2 Word8)
+    deriving (Show)
 type Pixel = Word8
 
--- | Creates a new image from a list of pixels.
-create :: Size -> [Pixel] -> GreyImage
-create size xs = fromList (imageShape size) xs
-
--- | Loads an image as greyscale at system path and detects image\'s type.
-load :: FilePath -> IO GreyImage
-load path = fromRGBA `fmap` R.load path
-
--- | Saves a greyscale image.
-save :: FilePath -> GreyImage -> IO ()
-save path = R.save path . toRGBA
-
--- | Gets a pixel from the image.
-getPixel :: GreyImage -> Point -> Pixel
-getPixel image (Point x y) = image ! (Z :. y :. x)
--- {-# INLINE getPixel #-}
-
--- | Gets a pixel from the image without checking bounds.
-unsafeGetPixel :: GreyImage -> Point -> Pixel
-unsafeGetPixel image (Point x y) = image `unsafeIndex` (Z :. y :. x)
-{-# INLINE unsafeGetPixel #-}
-
--- | Gets image\'s size.
-getSize :: GreyImage -> Size
-getSize image =
-    let (Z :. h :. w) = extent image
-    in Size w h
-{-# INLINE getSize #-}
-
--- | Resizes an image using the nearest-neighbor interpolation.
-resize :: GreyImage -> Size -> GreyImage
-resize image size'@(Size w' h') =
-    create size' [ v |
-          y' <- [0..h'-1], x' <- [0..w'-1]
-        , let !x = x' * w `quot` w'
-        , let !y = y' * h `quot` h'
-        , let !v = image `unsafeIndex` (Z :. y :. x)
-    ]
-  where
-    Size w h = getSize image
-
--- | Draws a rectangle inside the image using two transformation functions.
-drawRectangle :: GreyImage
-              -> (Pixel -> Pixel) -- ^ Border transformation
-              -> (Pixel -> Pixel) -- ^ Background transformation
-              -> Rect -> GreyImage
-drawRectangle image back border (Rect x y w h) =
-    image // backPts
-  where
-    {-borderPts = range (Point x y, Point (x+w) y) -- Top
-                ++ range (Point x (y+h), Point (x+w) (y+h)) -- Bottom
-                ++ range (Point x (y+1), Point x (y+h-1)) -- Left
-                ++ range (Point (x+w) (y+1), Point (x+w) (y+h-1)) -- Right-}
-    backPts = [ (shape, v) |
-            y' <- [y..y+h-1], x' <- [x..x+w-1]
-            , let !shape = (Z :. y' :. x')
-            , let !v = back $ image `unsafeIndex` shape
-        ]
-
--- | Creates a grey image from an RGBA image.
-fromRGBA :: R.RGBAImage -> GreyImage
-fromRGBA image =    
-    create size [ v |
-          y <- [0..h-1], x <- [0..w-1]
-        , let !r = (int $! image `unsafeIndex` (Z :. y :. x :. 0)) * 30
-        , let !g = (int $! image `unsafeIndex` (Z :. y :. x :. 1)) * 59
-        , let !b = (int $! image `unsafeIndex` (Z :. y :. x :. 2)) * 11
-        , let !v =  word8 $ (r + g + b) `quot` 100
-    ]
-  where
-    size@(Size w h) = R.getSize image
+instance I.Image GreyImage Word8 where
+    fromList size xs =
+        GreyImage $ fromList (imageShape size) xs
     
--- | Creates a RGBA image from an grey image.
+    fromFunction size f =
+        GreyImage $ fromFunction (imageShape size) $ \(Z :. y :. x) ->
+            f $ Point x y
+    
+    getSize (GreyImage image) =
+        let (Z :. h :. w) = extent image
+        in Size w h
+        
+    GreyImage image `getPixel` Point x y =
+        image ! (Z :. y :. x)
+    GreyImage image `unsafeGetPixel` Point x y =
+        image `unsafeIndex` (Z :. y :. x)
+
+instance I.StorableImage GreyImage Word8 where
+    load path = do
+        image <- I.load path
+        return $ fromRGBA image
+        
+    save path image = I.save path $ toRGBA image
+
+fromRGBA :: R.RGBAImage -> GreyImage
+fromRGBA image =
+    I.fromFunction (I.getSize image) (pixFromRGBA . I.getPixel image)
+
 toRGBA :: GreyImage -> R.RGBAImage
 toRGBA image =
-    R.create size $ concat [ pixToRGBA pix |
-          y <- [0..h-1], x <- [0..w-1]
-        , let !pix = image `getPixel` Point x y
-    ]
-  where
-    size@(Size w h) = getSize image
+    I.fromFunction (I.getSize image) (pixToRGBA . I.getPixel image)
 
-    pixToRGBA pix = [pix, pix, pix, maxBound]
+pixFromRGBA (R.Pixel r g b a) =
+    let r' = int r * 30
+        g' = int g * 59
+        b' = int b * 11
+    in word8 $ (r + g + b) `quot` 100
+
+pixToRGBA pix = R.Pixel pix pix pix 255
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2

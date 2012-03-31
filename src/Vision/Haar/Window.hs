@@ -14,6 +14,7 @@ import Debug.Trace
 import Data.Int
 import Data.Word
 
+import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Point (..), Size (..), Rect (..))
 
@@ -49,10 +50,10 @@ win rect@(Rect x y w h) integral squaredIntegral =
         -- -    S    -
         -- -         -
         -- c ------- d
-        let a = II.getValue image (Point x y)
-            b = II.getValue image (Point (x+w) y)
-            c = II.getValue image (Point x (y+h))
-            d = II.getValue image (Point (x+w) (y+h))
+        let a = image `I.getPixel` Point x y
+            b = image `I.getPixel` Point (x+w) y
+            c = image `I.getPixel` Point x (y+h)
+            d = image `I.getPixel` Point (x+w) (y+h)
         in d + a - b - c
 
 -- | Gets the value of a point (as in the default window) inside the window,
@@ -60,7 +61,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
-    {-ratio $! -} II.getValue image (Point destX destY)
+    {-ratio $! -} image `I.getPixel` Point destX destY
   where
     -- New coordinates with the window's ratio
     !destX = winX + (x * w `quot` windowWidth)
@@ -90,7 +91,7 @@ featuresPos minWidth minHeight =
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
-    let Size w h = II.getSize integral
+    let Size w h = I.getSize integral
     in [ win rect integral squaredIntegral |
             rect <- rectangles windowWidth windowHeight w h
        ]

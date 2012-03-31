@@ -1,24 +1,29 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Vision.Image.IntegralImage (
     -- * Type
-      IntegralImage
-    -- * Functions
-    , integralImage, getValue, getSize
+      IntegralImage (..), Pixel
+    -- * Functions 
+    , integralImage, imageShape
     ) where
 
 import Debug.Trace
 
-import Data.Array (Array, (!), array, bounds, elems)
+import Data.Array (Array, (!), array, listArray, bounds, elems)
 import Data.Int
 
+import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
 import Vision.Primitive (Point (..), Size (..))
 
-type IntegralImage = Array (Int, Int) Int64
+newtype IntegralImage = IntegralImage (Array (Int, Int) Int64)
+    deriving (Show, Read)
+type Pixel = Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
 integralImage :: Integral a => G.GreyImage -> (G.Pixel -> a) -> IntegralImage
 integralImage image f =
-    integral
+    IntegralImage $ integral
   where
     integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
 
@@ -33,23 +38,25 @@ integralImage image f =
         , let top = integral ! (y-1, x)
         , let left = integral ! (y, x-1)
         ]
-    
-    Size w h = G.getSize image
-    value x y = int64 $! f $! image `G.getPixel` Point x y
+
+    Size w h = I.getSize image
+    value x y = int64 $ f $ image `I.getPixel` Point x y
 {-# INLINABLE integralImage #-}
 
--- | Gets the value of a point inside an 'IntegralImage'. A value with x or y
--- equals to 0 will ever be 0.
-getValue :: IntegralImage -> Point -> Int64
-getValue image (Point x y) = image ! (y, x)
-{-# INLINE getValue #-}
+instance I.Image IntegralImage Int64 where
+    fromList size xs =
+        IntegralImage $ listArray (imageShape size) xs
+    
+    getSize (IntegralImage image) =
+        let (h, w) = snd $ bounds $ image
+        in Size (w + 1) (h + 1)
 
--- | Gives the original image\'s size.
-getSize :: IntegralImage -> Size
-getSize image =
-    let (h, w) = snd $ bounds $ image
-    in Size w h
-{-# INLINE getSize #-}
+    IntegralImage image `getPixel` Point x y =
+       image ! (y, x)
+
+-- | Returns the shape of an image of the given size.
+imageShape :: Size -> ((Int, Int), (Int, Int))
+imageShape (Size w h) = ((0, 0), (h-1, w-1))
 
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral

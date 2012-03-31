@@ -1,71 +1,70 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Vision.Image.RGBAImage (
     -- * Types & constructors
-      RGBAImage, Pixel (..), create
-    -- * Filesystem images manipulations
-    , load, save
+      RGBAImage (..), Pixel (..)
     -- * Functions
-    , getPixel, getSize, resize, imageShape
+    , imageShape
 ) where
 
 import Data.Word
 
 import Data.Array.Repa (
-      Array, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent
+      Array, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromList, fromFunction
+    , extent
     )
 import qualified Data.Array.Repa.IO.DevIL as IL
 
+import qualified Vision.Image as I
 import Vision.Primitive (Point (..), Size (..))
 
 -- | RGBA image (y :. x :. channel).
-type RGBAImage = Array DIM3 Word8
+newtype RGBAImage = RGBAImage (Array DIM3 Word8)
+    deriving (Show)
 data Pixel = Pixel {
     red :: !Word8, green :: !Word8, blue :: !Word8, alpha :: !Word8
     } deriving (Show, Read)
 
--- | Creates a new image from a list of pixels.
-create :: Size -> [Word8] -> RGBAImage
-create size xs = fromList (imageShape size) xs
-
--- | Loads an image at system path and detects image\'s type.
-load :: FilePath -> IO RGBAImage
-load = IL.runIL . IL.readImage
-
--- | Saves an image.
-save :: FilePath -> RGBAImage -> IO ()
-save path image =
-    IL.runIL $ IL.writeImage path image
+instance I.Image RGBAImage Pixel where
+    fromList size xs =
+        RGBAImage $ fromList (imageShape size) $ 
+            concat [ [r, b, b, a] | Pixel r g b a <- xs ]
     
--- | Gets a pixel from the image.
-getPixel :: RGBAImage -> Point -> Pixel
-getPixel image (Point x y) =
-    Pixel {
-          red = image ! (Z :. y :. x :. 0)
-        , green = image ! (Z :. y :. x :. 1)
-        , blue = image ! (Z :. y :. x :. 2)
-        , alpha = image ! (Z :. y :. x :. 3)
-    }
-{-# INLINE getPixel #-}
+    fromFunction size f =
+        RGBAImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
+            let point = Point x y
+            in case c of
+                 0 -> red $ f point
+                 1 -> green $ f point
+                 2 -> blue $ f point
+                 3 -> alpha $ f point
 
--- | Gets image\'s size.
-getSize :: RGBAImage -> Size
-getSize image = 
-    let (Z :. h :. w :. _) = extent image
-    in Size w h
-{-# INLINE getSize #-}
+    getSize (RGBAImage image) =
+        let (Z :. h :. w :. _) = extent image
+        in Size w h
 
--- | Resizes an image using the nearest-neighbor interpolation.
-resize :: RGBAImage -> Size -> RGBAImage
-resize image size'@(Size w' h') =
-    create size' [ v |
-          y' <- [0..h'-1], x' <- [0..w'-1], c <- [0..3]
-        , let !y = y' * h `quot` h'
-        , let !x = x' * w `quot` w'
-        , let !v = image `unsafeIndex` (Z :. y :. x :. c)
-    ]
-  where
-    Size w h = getSize image
+    RGBAImage image `getPixel` Point x y =
+        let coords = Z :. y :. x
+        in Pixel {
+              red = image ! (coords :. 0)
+            , green = image ! (coords :. 1)
+            , blue = image ! (coords :. 2)
+            , alpha = image ! (coords :. 3)
+        }
+
+    RGBAImage image `unsafeGetPixel` Point x y =
+        let coords = Z :. y :. x
+        in Pixel {
+              red = image `unsafeIndex` (coords :. 0)
+            , green = image `unsafeIndex` (coords :. 1)
+            , blue = image `unsafeIndex` (coords :. 2)
+            , alpha = image `unsafeIndex` (coords :. 3)
+        }
+
+instance I.StorableImage RGBAImage Pixel  where
+    load path = RGBAImage `fmap` (IL.runIL $ IL.readImage path)
+    save path (RGBAImage image) =  IL.runIL $ IL.writeImage path image
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3
