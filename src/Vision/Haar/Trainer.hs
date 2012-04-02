@@ -10,8 +10,6 @@ module Vision.Haar.Trainer (
     , train
     ) where
 
-import Debug.Trace
-
 import Control.Parallel.Strategies
 import Data.Function
 import Data.Int
@@ -49,8 +47,7 @@ instance Classifier HaarClassifier TrainingImage Bool where
 selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Weight)
 selectHaarClassifier tests =
     -- Selects the best classifier over all features.
-    let m = minimumBy weight bestClassifiers
-    in trace (show $ errorLevel m) m
+    minimumBy weight bestClassifiers
   where
     -- Selects the best classifier for each feature, using parallel computing.
     bestClassifiers =
@@ -102,7 +99,7 @@ featureValues feature =
     -- Computes the feature value and its weight.
     computeValue (t, w) =
         let !w' = if tiValid t then w else -w
-            !v = compute feature (tiWindow t)
+            v = compute feature (tiWindow t)
         in (v, w')
 
     -- Groups the same values in a tuple containing the value and the list of

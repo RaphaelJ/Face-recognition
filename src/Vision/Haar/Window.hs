@@ -10,7 +10,8 @@ module Vision.Haar.Window (
     ) where
 
 import Debug.Trace
-
+    
+import Data.Array.Unboxed (UArray, listArray, (!))
 import Data.Int
 import Data.Word
 
@@ -22,53 +23,70 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 data Win = Win {
       wRect :: !Rect
     , wIntegral :: !II.IntegralImage
-    , wDeviation :: !Int64 -- ^ Int64 to avoid casting
-    , wAvg :: !Int64
-    } deriving (Show)
+    -- | Values ([0;255]) of the commulative normal distribution for each 
+    -- pixels values ([0; 255]) based on the average and the standard derivation
+    -- of the 'Win' pixels values.
+    -- 
+    -- Used to equalize the values inside 'Win' histogram. This will return the
+    -- value of the pixel of value @x@ in the equalized distribution:
+    -- 
+    -- > wDistibution win ! x
+    , wDistibution :: !(UArray Int Double)
+    }
 
--- Default window\'s size
+-- Default window\'s size.
 windowWidth, windowHeight :: Int
 windowWidth = 24
 windowHeight = 24
 
--- | Constructs a new 'Win' object, computing the standard derivation and the
--- average pixels' value.
+windowPixels :: Int64
+windowPixels = int64 $ windowWidth * windowWidth
+
+-- | Constructs a new 'Win' object, computing the commulative normal
+-- distribution using the standard derivation and the average of pixels values.
 win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect x y w h) integral squaredIntegral =
-    traceShow (n, avg, deriv, valuesSum, squaresSum) $ Win rect integral deriv avg
+    Win rect integral distribution
+    --deriv (round avg)
   where
-    deriv = max 1 $ round $ sqrt $ double $ (squaresSum `quot` n) - avg^2
-    n = int64 w * int64 h
-    valuesSum = II.sumRectangle integral rect
-    avg = valuesSum `quot` n
-    squaresSum = II.sumRectangle squaredIntegral rect
+    avg = valuesSum / n
+    sig = max 1 $ sqrt $ (squaresSum / n) - avg^2
+    n = double $ w * h
+    valuesSum = double $ II.sumRectangle integral rect
+    squaresSum = double $ II.sumRectangle squaredIntegral rect
+    -- The normal distribution function
+    normal x = (1 / (sig * sqrt (2 * pi))) * exp (-(x - avg)^2 / (2 * sig^2))
+    distribution =
+        listArray (0, 255) $ tail $ scanl (\acc x -> acc + normal x) 0 [0..255]
 
 -- | Gets the value of a point (as in the default window) inside the window,
 -- takes care of the window\'s size ratio, so two points in two windows of
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
-getValue (Win (Rect winX winY w h) image _ _) (Point x y) =
-    {-ratio $! -} image `I.getPixel` Point destX destY
+Win (Rect winX winY w h) integral _ `getValue` Point x y =
+    ratio $ integral `I.getPixel` Point destX destY
   where
     -- New coordinates with the window's ratio
-    !destX = winX + (x * w `quot` windowWidth)
-    !destY = winY + (y * h `quot` windowHeight)
-    !n = int64 w * int64 h
+    destX = winX + (x * w `quot` windowWidth)
+    destY = winY + (y * h `quot` windowHeight)
+    n = int64 $ w * h
     -- Sum with the window\'s size ratio
-    ratio v = v * int64 windowWidth * int64 windowHeight `quot` int64 w `quot` int64 h
+    ratio v = v * windowPixels `quot` n
 {-# INLINE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
-normalizeSum :: Win -> Int64 -> Int64 -> Int64
-normalizeSum (Win _ _ deriv avg) n s =
-    n * (normalize $! s `quot` n)
+normalizeSum :: Win -> Int -> Int64 -> Int64
+normalizeSum (Win _ _ distribution) n s =
+    round $ double n * (normalize $ s `quot` int64 n) * 255
   where
+    normalize p = distribution ! int p
     -- Pixel\'s value normalized with the double of the standard derivation
-    -- (95% of pixels values, following the normal distribution), averaged
+    -- (95% of pixels values, following a normal distribution), averaged
     -- around 127.
-    normalize p = (p - (avg - 2*deriv)) * 255 `quot` (4*deriv)
+--     normalize p = (p - (avg - 2*deriv)) * 255 `quot` (4*deriv)
+{-# INLINE normalizeSum #-}
 
 -- | Lists all features positions and sizes inside the default window.
 featuresPos :: Int -> Int -> [Rect]
@@ -101,6 +119,8 @@ rectangles minWidth minHeight width height =
 
 double :: Integral a => a -> Double
 double = fromIntegral
+int :: Integral a => a -> Int
+int = fromIntegral
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral
 word16 :: Integral a => a -> Word16

@@ -8,7 +8,7 @@ module Vision.Haar.Feature (
     ) where
 
 import Debug.Trace
-
+    
 import Data.Int
     
 import qualified Vision.Haar.Window as W
@@ -33,13 +33,13 @@ compute r@(TwoVertRect (Rect x y w h)) win =
     -- -         -
     -- e ------- f
     let h' = h `quot` 2
-        a = W.getValue win (Point x y)
-        b = W.getValue win (Point (x+w) y)
-        c = W.getValue win (Point x (y+h'))
-        d = W.getValue win (Point (x+w) (y+h'))
-        e = W.getValue win (Point x (y+h))
-        f = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        a = win `W.getValue` Point x y
+        b = win `W.getValue` Point (x+w) y
+        c = win `W.getValue` Point x (y+h')
+        d = win `W.getValue` Point (x+w) (y+h')
+        e = win `W.getValue` Point x (y+h)
+        f = win `W.getValue` Point (x+w) (y+h)
+        normalize = W.normalizeSum win (w * h `quot` 2)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
     in s2 - s1
@@ -51,13 +51,13 @@ compute (TwoHorizRect (Rect x y w h)) win =
     -- -         -         -
     -- d ------- e ------- f
     let w' = w `quot` 2
-        a = W.getValue win (Point x y)
-        b = W.getValue win (Point (x+w') y)
-        c = W.getValue win (Point (x+w) y)
-        d = W.getValue win (Point x (y+h))
-        e = W.getValue win (Point (x+w') (y+h))
-        f = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        a = win `W.getValue` Point x y
+        b = win `W.getValue` Point (x+w') y
+        c = win `W.getValue` Point (x+w) y
+        d = win `W.getValue` Point x (y+h)
+        e = win `W.getValue` Point (x+w') (y+h)
+        f = win `W.getValue` Point (x+w) (y+h)
+        normalize = W.normalizeSum win (w * h `quot` 2)
         s1 = normalize $ e + a - b - d
         s2 = normalize $ f + b - c - e
     in s2 - s1
@@ -77,15 +77,15 @@ compute (ThreeVertRect (Rect x y w h)) win =
     -- -         -
     -- g ------- h''
     let h' = h `quot` 3
-        a = W.getValue win (Point x y)
-        b = W.getValue win (Point (x+w) y)
-        c = W.getValue win (Point x (y+h'))
-        d = W.getValue win (Point (x+w) (y+h'))
-        e = W.getValue win (Point x (y+h'+h'))
-        f = W.getValue win (Point (x+w) (y+h'+h'))
-        g = W.getValue win (Point x (y+h))
-        h'' = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        a = win `W.getValue` Point x y
+        b = win `W.getValue` Point (x+w) y
+        c = win `W.getValue` Point x (y+h')
+        d = win `W.getValue` Point (x+w) (y+h')
+        e = win `W.getValue` Point x (y+h'+h')
+        f = win `W.getValue` Point (x+w) (y+h'+h')
+        g = win `W.getValue` Point x (y+h)
+        h'' = win `W.getValue` Point (x+w) (y+h)
+        normalize = W.normalizeSum win (w * h * 2 `quot` 3)
         s1 = normalize $ d + a - b - c
         s2 = normalize $ f + c - d - e
         s3 = normalize $ h'' + e - f - g
@@ -98,15 +98,15 @@ compute (ThreeHorizRect (Rect x y w h)) win =
     -- -         -         -         -
     -- e ------- f ------- g ------- h''
     let w' = w `quot` 3
-        a = W.getValue win (Point x y)
-        b = W.getValue win (Point (x+w') y)
-        c = W.getValue win (Point (x+w'+w') y)
-        d = W.getValue win (Point (x+w) y)
-        e = W.getValue win (Point x (y+h))
-        f = W.getValue win (Point (x+w') (y+h))
-        g = W.getValue win (Point (x+w'+w') (y+h))
-        h'' = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        a = win `W.getValue` Point x y
+        b = win `W.getValue` Point (x+w') y
+        c = win `W.getValue` Point (x+w'+w') y
+        d = win `W.getValue` Point (x+w) y
+        e = win `W.getValue` Point x (y+h)
+        f = win `W.getValue` Point (x+w') (y+h)
+        g = win `W.getValue` Point (x+w'+w') (y+h)
+        h'' = win `W.getValue` Point (x+w) (y+h)
+        normalize = W.normalizeSum win (w * h * 2 `quot` 3)
         s1 = normalize $ f + a - b - e
         s2 = normalize $ g + b - c - f
         s3 = normalize $ h'' + c - d - g
@@ -124,18 +124,18 @@ compute (FourRect (Rect x y w h)) win =
     -- g ------ h'' ------ i
     let w' = w `quot` 2
         h' = h `quot` 2
-        a = W.getValue win (Point x y)
-        b = W.getValue win (Point (x+w') y)
-        c = W.getValue win (Point (x+w) y)
-        d = W.getValue win (Point x (y+h'))
-        e = W.getValue win (Point (x+w') (y+h'))
-        f = W.getValue win (Point (x+w) (y+h'))
-        g = W.getValue win (Point x (y+h))
-        h'' = W.getValue win (Point (x+w') (y+h))
-        i = W.getValue win (Point (x+w) (y+h))
-        normalize = W.normalizeSum win (int64 w * int64 h)
+        a = win `W.getValue` Point x y
+        b = win `W.getValue` Point (x+w') y
+        c = win `W.getValue` Point (x+w) y
+        d = win `W.getValue` Point x (y+h')
+        e = win `W.getValue` Point (x+w') (y+h')
+        f = win `W.getValue` Point (x+w) (y+h')
+        g = win `W.getValue` Point x (y+h)
+        h'' = win `W.getValue` Point (x+w') (y+h)
+        i = win `W.getValue` Point (x+w) (y+h)
+        normalize = W.normalizeSum win (w * h * 2 `quot` 4)
         s1 = normalize $ e + a - b - d
-        s2 = normalize $ f + b - c - d
+        s2 = normalize $ f + b - c - e
         s3 = normalize $ h'' + d - e - g
         s4 = normalize $ i + e - f - h''
     in s1 + s4 - s2 - s3
@@ -144,11 +144,11 @@ compute (FourRect (Rect x y w h)) win =
 -- | List all features inside a standard window.
 features :: [HaarFeature]
 features =
-    map TwoVertRect (W.featuresPos 1 2){- ++
+    map TwoVertRect (W.featuresPos 1 2) ++
     map TwoHorizRect (W.featuresPos 2 1) ++
     map ThreeVertRect (W.featuresPos 1 3) ++
     map ThreeHorizRect (W.featuresPos 3 1) ++
-    map FourRect (W.featuresPos 2 2)-}
+    map FourRect (W.featuresPos 2 2)
 
 int64 :: (Integral a) => a -> Int64
 int64 = fromIntegral
