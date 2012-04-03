@@ -23,13 +23,23 @@ type Weight = Double
 -- | Represents an instance of a testable item (image ...) with a method to gets
 -- its class identifier (i.e. Bool for binary classes, ...).
 class TrainingTest t cl | t -> cl where
-    tClass :: t -> cl -- ^ Gives the class identifier of the test
+    -- | Gives the class identifier of the test.
+    tClass :: t -> cl
 
 -- | Represents an instance of a classifier able to classify a type of tests
 -- for a class of items.
+--
+-- Minimal complete definition: 'cClassScore', 'getSize' and
+-- 'getPixel'.
 class Classifier c t cl | c t -> cl where
     -- | Infers the class of the test using the classifier.
     cClass :: c -> t -> cl
+
+    -- | Infers the class of the test using the classifier with a score ([0;1]
+    -- with @1@ for sure, @0@ for unlikely).
+    cClassScore :: c -> t -> (cl, Weight)
+
+    classifier `cClass` test = fst $ classifier `cClassScore` test
 
 -- | A 'StrongClassifier' is a trained container with a set of classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
@@ -48,14 +58,15 @@ data WeakClassifier a = WeakClassifier {
 -- The 'StrongClassifier' will give the class with the strongest score.
 instance (Classifier weak t cl, Ord cl)
          => Classifier (StrongClassifier weak) t cl where
-    cClass (StrongClassifier cs) test =
-        fst $ maximumBy (compare `on` snd) classesScores
+    StrongClassifier cs `cClassScore` test =
+        maximumBy (compare `on` snd) classesScores
       where
         -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes with score.
         classesScores = M.toList $ foldl' step M.empty cs
         step acc (WeakClassifier c w) =
-            M.insertWith' (+) (cClass c test) w acc
+            let (cl, score) = c `cClassScore` test
+            in M.insertWith' (+) cl (w * score) acc
 
 -- | Trains a strong classifier from a weak classifier selector and a set of
 -- tests.
@@ -63,10 +74,10 @@ instance (Classifier weak t cl, Ord cl)
 -- best weak classifier with an error score, wich is the sum of failed tests.
 -- The weak classifier must be able to classify the tests.
 adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl, Show cl)
-         => Int -> [t] ->
+         => Int -> [t]
             -- | The selector which builds an optimal 'WeakClassifier' for the
             -- set of tests.
-            ([(t, Weight)] -> (c, Weight))
+            -> ([(t, Weight)] -> (c, Weight))
             -> StrongClassifier c
 adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
@@ -85,7 +96,7 @@ adaBoost steps initTests weakSelector =
 
     tClassEq = (==) `on` tClass
     tClassCompare = compare `on` tClass
-        
+
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers weakSelector tests =
     WeakClassifier c cWeight : selectClassifiers weakSelector tests'

@@ -5,30 +5,37 @@ module Vision.Haar.Detector (
     , detectImage, loadClassifier
     ) where
 
+import Data.Function
+import Data.List
 import System.FilePath (FilePath)
 
-import AI.Learning.AdaBoost (Classifier (..), StrongClassifier)
+import AI.Learning.AdaBoost (Classifier (..), StrongClassifier, Weight)
 import Vision.Haar.Classifier (HaarClassifier)
 import Vision.Haar.Window (wRect, windows)
-import Vision.Image.GreyImage (GreyImage, load, save, drawRectangle)
-import Vision.Image.IntegralImage (computeIntegralImage)
+import qualified Vision.Image as I
+import qualified Vision.Image.GreyImage as G
+import qualified Vision.Image.IntegralImage as II
+import Vision.Primitive (Rect)
 
 -- | Detects all positive matchs inside the image using a strong
 -- 'HaarClassifier'.
-detect :: StrongClassifier HaarClassifier -> GreyImage -> IO [Rect]
+detect :: StrongClassifier HaarClassifier -> G.GreyImage -> [(Rect, Weight)]
 detect classifier image =
-    let int = computeIntegralImage image id
-        squaredInt = computeIntegralImage image (^2)
-    in map wRect $ filter (classifier `check`) (windows int squaredInt)
+    let integral = II.integralImage image id
+        squaredIintegral = II.integralImage image (^2)
+        wins = windows integral squaredIintegral
+        rects = map (\w -> (wRect w, classifier `cClassScore` w)) wins
+        valids = filter (\(r, (v, s)) -> v) rects
+    in reverse $ map (\(r, (v, s)) -> (r, s)) $ sortBy (compare `on` (snd . snd)) valids
 
 -- | Loads a strong 'HaarClassifier' and an image and detects all positive
 -- matchs.
-detectImage :: FilePath -> FilePath -> IO [Rect]
+detectImage :: FilePath -> FilePath -> IO [(Rect, Weight)]
 detectImage classifierPath imagePath = do
     classifier <- loadClassifier classifierPath
-    image <- load imagePath Nothing
+    image <- I.load imagePath
 
-    return $ detectImage classifier image
+    return $ detect classifier image
 
 -- | Loads a strong 'HaarClassifier'.
 loadClassifier :: FilePath -> IO (StrongClassifier HaarClassifier)

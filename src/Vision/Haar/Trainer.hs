@@ -39,7 +39,7 @@ instance TrainingTest TrainingImage Bool where
     tClass = tiValid
 
 instance Classifier HaarClassifier TrainingImage Bool where
-    classifier `cClass` image = classifier `cClass` tiWindow image
+    classifier `cClassScore` image = classifier `cClassScore` tiWindow image
 
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
@@ -72,7 +72,9 @@ selectHaarClassifier tests =
         ) ([], weightInvalid) (featureValues feature tests)
 
     errorLevel (classifier@(HaarClassifier feature value parity), e) =
-        let bad = sum $ map snd $ filter (\(t, w) -> classifier `cClass` t /= tiValid t) tests
+        let bad = sum $ map snd $ filter (\(t, w) ->
+                classifier `cClass` t /= tiValid t
+            ) tests
         in (e, bad, abs $ e - bad)
     
     -- Sums the weight of all non valid tests.
@@ -80,19 +82,10 @@ selectHaarClassifier tests =
     
     weight = compare `on` snd
 
---     testF feature val =
---         let goods = length $ filter (val >=) $ map fst $ featureValuesSorted feature tests
---             score = sum $ map snd $ filter (\(t, w) -> val < t) $ featureValuesSorted feature tests
---             ns = length $ filter (\(t, w) -> val >= t) $ featureValuesSorted feature tests
---             n = length $ tests
---             valids = length $ filter (\(i, w) -> tiValid i) $ tests
---         in (n, goods, valids, val)
-
 -- | Computes all feature\'s values with a set of tests, sorted and grouped by
 -- value.
 -- Keeps the test weight. Negative for valid tests, positive for valid tests.
-featureValues :: HaarFeature -> [(TrainingImage, Weight)]
-                       -> [(Int64, [Weight])]
+featureValues :: HaarFeature -> [(TrainingImage, Weight)] -> [(Int64, [Weight])]
 featureValues feature =
     groupByValue . sortBy (compare `on` fst) . map computeValue
   where
@@ -146,7 +139,7 @@ trainingImages valid =
   where
     rect = Rect 0 0 windowWidth windowHeight
     trainingImage image =
-        let ii = II.integralImage image id
-            squaredIi = II.integralImage image (^2)
-            window = win rect ii squaredIi
+        let integral = II.integralImage image id
+            squaredIntegral = II.integralImage image (^2)
+            window = win rect integral squaredIntegral
         in TrainingImage window valid

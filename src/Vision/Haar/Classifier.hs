@@ -21,8 +21,9 @@ data HaarClassifier = HaarClassifier {
 -- | The 'HaarClassifier' is able to classify a part of an image using its
 -- iteration window.
 instance Classifier HaarClassifier Win Bool where
-    HaarClassifier feature thres parity `cClass` window =
+    HaarClassifier feature thres parity `cClassScore` window =
         let val = compute feature window
-        in if parity
-              then val >= thres
-              else val < thres
+            valid = if parity
+                       then val >= thres
+                       else val < thres
+        in (valid, 1.0)
