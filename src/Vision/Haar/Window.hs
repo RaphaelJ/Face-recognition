@@ -52,8 +52,8 @@ win rect@(Rect x y w h) integral squaredIntegral =
     avg = valuesSum / n
     sig = max 1 $ sqrt $ (squaresSum / n) - avg^2
     n = double $ w * h
-    valuesSum = double $ II.sumRectangle integral rect
-    squaresSum = double $ II.sumRectangle squaredIntegral rect
+    valuesSum = traceShow rect $ double $ II.sumRectangle integral rect
+    squaresSum = traceShow rect $ double $ II.sumRectangle squaredIntegral rect
     -- The normal distribution function
     normal x = (1 / (sig * sqrt (2 * pi))) * exp (-(x - avg)^2 / (2 * sig^2))
     distribution =
@@ -64,7 +64,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    ratio $ integral `I.getPixel` Point destX destY
+    1 -- ratio $ integral `I.getPixel` Point destX destY
   where
     -- New coordinates with the window's ratio
     destX = winX + (x * w `quot` windowWidth)
@@ -81,7 +81,7 @@ normalizeSum :: Win -> Int -> Int64 -> Int64
 normalizeSum (Win _ _ distribution) n s =
     round $ double n * (normalize $ s `quot` int64 n) * 255
   where
-    normalize p = distribution ! int p
+    normalize p = double p -- distribution ! int p
     -- Pixel\'s value normalized with the double of the standard derivation
     -- (95% of pixels values, following a normal distribution), averaged
     -- around 127.
@@ -96,10 +96,19 @@ featuresPos minWidth minHeight =
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
-    let Size w h = I.getSize integral
-    in [ win rect integral squaredIntegral |
-            rect <- rectangles windowWidth windowHeight w h
-       ]
+    [ win (Rect x y w h) integral squaredIntegral |
+          size <- [1..maxSize]
+        , let w = size * windowWidth
+        , let h = size * windowHeight
+        , x <- [0,incrX..width-w]
+        , y <- [0,incrY..height-h]
+    ]
+  where
+    Size width height = I.getSize integral
+    maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
+    incrMult = 1
+    incrX = 1 * incrMult
+    incrY = 1 * incrMult
 
 -- | Lists all rectangle positions and sizes inside a rectangle of
 -- width * height.

@@ -29,8 +29,7 @@ class TrainingTest t cl | t -> cl where
 -- | Represents an instance of a classifier able to classify a type of tests
 -- for a class of items.
 --
--- Minimal complete definition: 'cClassScore', 'getSize' and
--- 'getPixel'.
+-- Minimal complete definition: 'cClassScore'.
 class Classifier c t cl | c t -> cl where
     -- | Infers the class of the test using the classifier.
     cClass :: c -> t -> cl
