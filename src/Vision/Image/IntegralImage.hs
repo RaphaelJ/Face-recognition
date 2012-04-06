@@ -52,7 +52,7 @@ instance I.Image IntegralImage Int64 where
         in Size (w + 1) (h + 1)
 
     IntegralImage image `getPixel` Point x y = 
-       traceShow (x, y, I.getSize (IntegralImage image)) $ image ! (y, x)
+       image ! (y, x)
        
 -- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
 sumRectangle integral (Rect x y w h) =

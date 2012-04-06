@@ -52,8 +52,8 @@ win rect@(Rect x y w h) integral squaredIntegral =
     avg = valuesSum / n
     sig = max 1 $ sqrt $ (squaresSum / n) - avg^2
     n = double $ w * h
-    valuesSum = traceShow rect $ double $ II.sumRectangle integral rect
-    squaresSum = traceShow rect $ double $ II.sumRectangle squaredIntegral rect
+    valuesSum = double $ II.sumRectangle integral rect
+    squaresSum = double $ II.sumRectangle squaredIntegral rect
     -- The normal distribution function
     normal x = (1 / (sig * sqrt (2 * pi))) * exp (-(x - avg)^2 / (2 * sig^2))
     distribution =
@@ -64,7 +64,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    1 -- ratio $ integral `I.getPixel` Point destX destY
+    ratio $ integral `I.getPixel` Point destX destY
   where
     -- New coordinates with the window's ratio
     destX = winX + (x * w `quot` windowWidth)
@@ -104,7 +104,8 @@ windows integral squaredIntegral =
         , y <- [0,incrY..height-h]
     ]
   where
-    Size width height = I.getSize integral
+    Size iWidth iHeight = I.getSize integral
+    (width, height) = (iWidth - 1, iHeight - 1)
     maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
     incrMult = 1
     incrX = 1 * incrMult

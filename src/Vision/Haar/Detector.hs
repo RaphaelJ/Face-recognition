@@ -2,7 +2,7 @@ module Vision.Haar.Detector (
     -- * Functions
       detect
     -- * Impure utilities
-    , detectImage, loadClassifier
+    , loadClassifier
     ) where
 
 import Data.Function
@@ -27,15 +27,6 @@ detect classifier image =
         rects = map (\w -> (wRect w, classifier `cClassScore` w)) wins
         valids = filter (\(r, (v, s)) -> v) rects
     in reverse $ map (\(r, (v, s)) -> (r, s)) $ sortBy (compare `on` (snd . snd)) valids
-
--- | Loads a strong 'HaarClassifier' and an image and detects all positive
--- matchs.
-detectImage :: FilePath -> FilePath -> IO [(Rect, Weight)]
-detectImage classifierPath imagePath = do
-    classifier <- loadClassifier classifierPath
-    image <- I.load imagePath
-
-    return $ detect classifier image
 
 -- | Loads a strong 'HaarClassifier'.
 loadClassifier :: FilePath -> IO (StrongClassifier HaarClassifier)
