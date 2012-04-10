@@ -11,17 +11,24 @@ module Vision.Image (
 
 import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
 
+import qualified Data.Array.Repa as R
+
 -- | The 'Image' class represents images with pixels of type p.
 -- 'Image's are 0 indexed.
 -- 
--- Minimal complete definition: 'fromList', 'getSize' and
--- 'getPixel'.
+-- Minimal complete definition: 'fromList', 'getSize' and 'getPixel'.
 class Image i p | i -> p where
     fromList :: Size -> [p] -> i
-    fromFunction :: Size -> (Point -> p) -> i
-    getSize :: i -> Size
-    getPixel, unsafeGetPixel :: i -> Point -> p
     
+    fromFunction :: Size -> (Point -> p) -> i
+    {-# INLINE fromFunction #-}
+    
+    getSize :: i -> Size
+    {-# INLINE getSize #-}
+    
+    getPixel, unsafeGetPixel :: i -> Point -> p
+    {-# INLINE getPixel #-} {-# INLINE unsafeGetPixel #-} 
+        
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
     
     unsafeGetPixel = getPixel
@@ -40,7 +47,8 @@ resize image size'@(Size w' h') =
         in image `unsafeGetPixel` Point x y
   where
     Size w h = getSize image
--- {-# INLINE resize #-}
+{-# INLINABLE resize #-}
+{-# SPECIALIZE resize #-}
 
 -- | Draws a rectangle inside the 'Image' using two transformation functions.
 drawRectangle :: Image i p => i
@@ -63,3 +71,5 @@ drawRectangle image back border (Rect rx ry rw rh) =
 
     rx' = rx + rw - 1
     ry' = ry + rh - 1
+{-# INLINABLE resize #-}
+{-# SPECIALIZE resize #-}

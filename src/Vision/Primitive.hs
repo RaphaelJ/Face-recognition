@@ -7,28 +7,35 @@ module Vision.Primitive (
 
 import Data.Ix
 
-data Point = Point { pX :: !Int, pY :: !Int }
-    deriving (Show, Read, Eq, Ord)
+data Point = Point { 
+      pX :: {-# UNPACK #-} !Int, pY :: {-# UNPACK #-} !Int
+    } deriving (Show, Read, Eq, Ord)
     
 instance Ix Point where
     range (Point x1 y1, Point x2 y2) =
         map (uncurry Point) $ range ((x1, y1), (x2, y2))
+    {-# INLINE range #-}
     
     index (Point x1 y1, Point x2 y2) (Point x y) = 
         index ((x1, y1), (x2, y2)) (x, y)
+    {-# INLINE index #-}
         
     inRange (Point x1 y1, Point x2 y2) (Point x y) =
         inRange ((x1, y1), (x2, y2)) (x, y)
+    {-# INLINE inRange #-}
 
     rangeSize (Point x1 y1, Point x2 y2) =
         rangeSize ((x1, y1), (x2, y2))
+    {-# INLINE rangeSize #-}
 
-data Size = Size { sWidth :: !Int, sHeight :: !Int }
-    deriving (Show, Read, Eq)
+data Size = Size { 
+      sWidth :: {-# UNPACK #-} !Int
+    , sHeight :: {-# UNPACK #-} !Int 
+    } deriving (Show, Read, Eq)
 
 data Rect = Rect {
-      rX :: !Int, rY :: !Int
-    , rWidth :: !Int, rHeight :: !Int
+      rX :: {-# UNPACK #-} !Int, rY :: {-# UNPACK #-} !Int
+    , rWidth :: {-# UNPACK #-} !Int, rHeight :: {-# UNPACK #-}  !Int
     } deriving (Show, Read, Eq)
     
 -- | Returns the bounds of coordinates of a rectangle of the given size.
