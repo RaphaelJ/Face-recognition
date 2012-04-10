@@ -21,17 +21,16 @@ class Image i p | i -> p where
     fromList :: Size -> [p] -> i
     
     fromFunction :: Size -> (Point -> p) -> i
-    {-# INLINE fromFunction #-}
     
     getSize :: i -> Size
-    {-# INLINE getSize #-}
     
     getPixel, unsafeGetPixel :: i -> Point -> p
-    {-# INLINE getPixel #-} {-# INLINE unsafeGetPixel #-} 
         
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
+    {-# INLINE fromFunction #-}
     
     unsafeGetPixel = getPixel
+    {-# INLINE unsafeGetPixel #-} 
 
 -- | The 'StorableImage' class adds storage capabilities to the 'Image' class.
 class Image i p => StorableImage i p where
@@ -48,7 +47,6 @@ resize image size'@(Size w' h') =
   where
     Size w h = getSize image
 {-# INLINABLE resize #-}
-{-# SPECIALIZE resize #-}
 
 -- | Draws a rectangle inside the 'Image' using two transformation functions.
 drawRectangle :: Image i p => i
@@ -71,5 +69,4 @@ drawRectangle image back border (Rect rx ry rw rh) =
 
     rx' = rx + rw - 1
     ry' = ry + rh - 1
-{-# INLINABLE resize #-}
-{-# SPECIALIZE resize #-}
+{-# INLINABLE drawRectangle #-}

@@ -5,18 +5,18 @@ module Vision.Image.GreyImage (
     -- * Types & constructors
       GreyImage (..), Pixel
     -- * Functions
-    , fromRGBA, toRGBA, imageShape
+    , fromRGB, toRGB, imageShape
     ) where
 
 import Data.Word
 
 import Data.Array.Repa (
-      Array, DIM2, Z (..), (:.) (..), (!), unsafeIndex, fromList, extent, (//)
-    , fromFunction
+      Array, DIM2, Z (..), (:.) (..), (!), unsafeIndex, fromListUnboxed, extent
+    , fromFunction, delay
     )
 
 import qualified Vision.Image as I
-import qualified Vision.Image.RGBAImage as R
+import qualified Vision.Image.RGBImage as R
 import Vision.Primitive (
     Point (..), Size (..), Rect (..)
     )
@@ -28,11 +28,13 @@ type Pixel = Word8
 
 instance I.Image GreyImage Word8 where
     fromList size xs =
-        GreyImage $ fromList (imageShape size) xs
+        GreyImage $ delay $ fromListUnboxed (imageShape size) xs
+    {-# INLINE fromList #-}
     
     fromFunction size f =
         GreyImage $ fromFunction (imageShape size) $ \(Z :. y :. x) ->
             f $ Point x y
+    {-# INLINE fromFunction #-}
     
     getSize (GreyImage image) =
         let (Z :. h :. w) = extent image
@@ -50,15 +52,15 @@ instance I.StorableImage GreyImage Word8 where
         
     save path image = I.save path $ toRGBA image
 
-fromRGBA :: R.RGBAImage -> GreyImage
-fromRGBA image =
+fromRGB :: R.RGBImage -> GreyImage
+fromRGB image =
     I.fromFunction (I.getSize image) (pixFromRGBA . I.getPixel image)
 
-toRGBA :: GreyImage -> R.RGBAImage
-toRGBA image =
+toRGB :: GreyImage -> R.RGBImage
+toRGB image =
     I.fromFunction (I.getSize image) (pixToRGBA . I.getPixel image)
 
-pixFromRGBA (R.Pixel r g b a) =
+pixFromRGB (R.Pixel r g b a) =
     let r' = int r * 30
         g' = int g * 59
         b' = int b * 11
@@ -69,6 +71,7 @@ pixToRGBA pix = R.Pixel pix pix pix 255
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2
 imageShape (Size w h) = Z :. h :. w
+{-# INLINE imageShape #-}
 
 int :: Integral a => a -> Int
 int = fromIntegral
