@@ -7,7 +7,7 @@ module Vision.Image (
       Image (..), StorableImage (..), Convertible (..)
     -- * Misc images tranformations
     , resize, drawRectangle
-) where
+    ) where
 
 import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
 

@@ -73,8 +73,8 @@ selectHaarClassifier tests =
 
     errorLevel (classifier@(HaarClassifier feature value parity), e) =
         let bad = sum $ map snd $ filter (\(t, w) ->
-                classifier `cClass` t /= tiValid t
-            ) tests
+                    classifier `cClass` t /= tiValid t
+                ) tests
         in (e, bad, abs $ e - bad)
     
     -- Sums the weight of all non valid tests.
