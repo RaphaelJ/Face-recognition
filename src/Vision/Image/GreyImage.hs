@@ -5,7 +5,7 @@ module Vision.Image.GreyImage (
     -- * Types & constructors
       GreyImage (..), Pixel
     -- * Functions
-    , fromRGB, toRGB, imageShape
+    , fromRGB, imageShape
     ) where
 
 import Data.Word
@@ -39,11 +39,15 @@ instance I.Image GreyImage Word8 where
     getSize (GreyImage image) =
         let (Z :. h :. w) = extent image
         in Size w h
+    {-# INLINE getSize #-}
         
     GreyImage image `getPixel` Point x y =
         image ! (Z :. y :. x)
+    {-# INLINE getPixel #-}
+    
     GreyImage image `unsafeGetPixel` Point x y =
         image `unsafeIndex` (Z :. y :. x)
+    {-# INLINE unsafeGetPixel #-}
 
 instance I.StorableImage GreyImage Word8 where
     load path = do
@@ -55,18 +59,13 @@ instance I.StorableImage GreyImage Word8 where
 fromRGB :: R.RGBImage -> GreyImage
 fromRGB image =
     I.fromFunction (I.getSize image) (pixFromRGBA . I.getPixel image)
-
-toRGB :: GreyImage -> R.RGBImage
-toRGB image =
-    I.fromFunction (I.getSize image) (pixToRGBA . I.getPixel image)
-
-pixFromRGB (R.Pixel r g b a) =
-    let r' = int r * 30
-        g' = int g * 59
-        b' = int b * 11
-    in word8 $ (r' + g' + b') `quot` 100
-
-pixToRGBA pix = R.Pixel pix pix pix 255
+  where
+    pixFromRGB (R.Pixel r g b a) =
+        let r' = int r * 30
+            g' = int g * 59
+            b' = int b * 11
+        in word8 $ (r' + g' + b') `quot` 100
+{-# INLINE fromRGBn #-}
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2

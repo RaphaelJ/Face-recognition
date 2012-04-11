@@ -5,7 +5,7 @@ module Vision.Image.RGBImage (
     -- * Types & constructors
       RGBImage (..), Pixel (..)
     -- * Functions
-    , imageShape
+    , fromGrey, imageShape
 ) where
 
 import Data.Word
@@ -47,6 +47,7 @@ instance I.Image RGBImage Pixel where
     getSize (RGBImage image) =
         let (Z :. h :. w :. _) = extent image
         in Size w h
+    {-# INLINE getSize #-}
 
     RGBImage image `getPixel` Point x y =
         let coords = Z :. y :. x
@@ -66,7 +67,7 @@ instance I.Image RGBImage Pixel where
         }
     {-# INLINE unsafeGetPixel #-}
 
-instance I.StorableImage RGBImage Pixel  where
+instance I.StorableImage RGBImage Pixel where
     load path =
         IL.runIL $ fromILImage `fmap` IL.readImage path
     {-# INLINE load #-}
@@ -75,6 +76,16 @@ instance I.StorableImage RGBImage Pixel  where
         IL.runIL $ IL.writeImage path (IL.RGB $ computeS image)
     {-# INLINE save #-}
 
+-- | Converts a greyscale image to RGB.
+fromGrey :: IL.Grey i -> R.RGBImage
+fromGrey image =
+    I.fromFunction (I.getSize image) (pixToRGBA . I.getPixel image)
+  where
+    pixFromGrey pix = R.Pixel pix pix pix
+    {-# INLINE pixToRGBA #-}
+{-# INLINE fromGrey #-}
+
+-- | Converts an image from its DevIL representation to a 'RGBImage'.
 fromILImage :: IL.Image -> RGBImage
 fromILImage (IL.RGB i)  = RGBImage $ delay i
 fromILImage (IL.RGBA i) = 
@@ -87,12 +98,7 @@ fromILImage (IL.RGBA i) =
         }
   where
     (Z :. h :. w :. _) = extent i
-fromILImage (IL.Grey i) =
-    I.fromFunction (Size w h) $ \(Point x y) ->
-        let val = i ! (Z :. y :. x)
-        in Pixel val val val
-  where
-    (Z :. h :. w) = extent i
+fromILImage (IL.Grey i) = fromGrey i
 {-# INLINE fromILImage #-}
     
 -- | Returns the shape of an image of the given size.

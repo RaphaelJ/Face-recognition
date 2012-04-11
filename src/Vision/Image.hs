@@ -4,7 +4,7 @@
 
 module Vision.Image (
     -- * Types classes
-      Image (..), StorableImage (..)
+      Image (..), StorableImage (..), Convertible (..)
     -- * Misc images tranformations
     , resize, drawRectangle
 ) where
@@ -47,6 +47,11 @@ resize image size'@(Size w' h') =
   where
     Size w h = getSize image
 {-# INLINABLE resize #-}
+
+-- | The 'Convertible' class adds convertion capabilities between two objects
+-- ('Image's in this case).
+class Convertible i1 i2 where
+    convert :: i1 -> i2
 
 -- | Draws a rectangle inside the 'Image' using two transformation functions.
 drawRectangle :: Image i p => i
