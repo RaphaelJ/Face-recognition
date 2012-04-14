@@ -14,25 +14,25 @@ import qualified Data.Array.Repa.IO.DevIL as IL
 import Data.Convertible (convert)
 
 import qualified Vision.Image as I
-import Vision.Image.RGBImage.Base
-import Vision.Image.RGBImage.Conversion
+import Vision.Image.RGBAImage.Base
+import Vision.Image.RGBAImage.Conversion
 import Vision.Image.GreyImage.Base (GreyImage (..))
-import Vision.Image.RGBAImage.Base (RGBAImage (..))
+import Vision.Image.RGBImage.Base (RGBImage (..))
 
 import Vision.Primitive (Point (..), Size (..))
 
-instance I.StorableImage RGBImage Pixel where
+instance I.StorableImage RGBAImage Pixel where
     load path =
         IL.runIL $ fromILImage `fmap` IL.readImage path
     {-# INLINE load #-}
         
-    save path (RGBImage image) = 
-        IL.runIL $ IL.writeImage path (IL.RGB $ computeS image)
+    save path (RGBAImage image) = 
+        IL.runIL $ IL.writeImage path (IL.RGBA $ computeS image)
     {-# INLINE save #-}
 
--- | Converts an image from its DevIL representation to a 'RGBImage'.
-fromILImage :: IL.Image -> RGBImage
-fromILImage (IL.RGB i)  = RGBImage $ delay i
-fromILImage (IL.RGBA i) = convert $ RGBAImage $ delay i
+-- | Converts an image from its DevIL representation to a 'RGBAImage'.
+fromILImage :: IL.Image -> RGBAImage
+fromILImage (IL.RGB i)  = convert $ R.RGBImage $ delay i
+fromILImage (IL.RGBA i) = RGBAImage $ delay i
 fromILImage (IL.Grey i) = convert $ GreyImage $ delay i
 {-# INLINE fromILImage #-}

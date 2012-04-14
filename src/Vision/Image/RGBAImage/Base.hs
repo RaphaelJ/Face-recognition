@@ -1,8 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Image.RGBImage.Base (
+module Vision.Image.RGBAImage.Base (
     -- * Types & constructors
-      RGBImage (..), Pixel (..)
+      RGBAImage (..), Pixel (..)
     -- * Functions
     , imageShape
     ) where
@@ -17,31 +17,33 @@ import Data.Array.Repa (
 import qualified Vision.Image as I
 import Vision.Primitive (Point (..), Size (..))
 
--- | RGB image (y :. x :. channel).
-newtype RGBImage = RGBImage (Array D DIM3 Word8)
+-- | RGBA image (y :. x :. channel).
+newtype RGBAImage = RGBAImage (Array D DIM3 Word8)
 
 data Pixel = Pixel {
       red ::   {-# UNPACK #-} !Word8
     , green :: {-# UNPACK #-} !Word8
     , blue ::  {-# UNPACK #-} !Word8
+    , alpha :: {-# UNPACK #-} !Word8
     } deriving (Show, Read, Eq)
 
-instance I.Image RGBImage Pixel where
+instance I.Image RGBAImage Pixel where
     fromList size xs =
-        RGBImage $ delay $ fromListUnboxed (imageShape size) $ 
-            concat [ [r, b, b] | Pixel r g b <- xs ]
+        RGBAImage $ delay $ fromListUnboxed (imageShape size) $ 
+            concat [ [r, g, b, a] | Pixel r g b a <- xs ]
     {-# INLINE fromList #-}
     
     fromFunction size f =
-        RGBImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
+        RGBAImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
             let point = Point x y
             in case c of
                  0 -> red $ f point
                  1 -> green $ f point
                  2 -> blue $ f point
+                 3 -> alpha $ f point
     {-# INLINE fromFunction #-}
 
-    getSize (RGBImage image) =
+    getSize (RGBAImage image) =
         let (Z :. h :. w :. _) = extent image
         in Size w h
     {-# INLINE getSize #-}
@@ -52,6 +54,7 @@ instance I.Image RGBImage Pixel where
               red = image ! (coords :. 0)
             , green = image ! (coords :. 1)
             , blue = image ! (coords :. 2)
+            , alpha = image ! (coords :. 3)
         }
     {-# INLINE getPixel #-}
 
@@ -61,10 +64,11 @@ instance I.Image RGBImage Pixel where
               red = image `unsafeIndex` (coords :. 0)
             , green = image `unsafeIndex` (coords :. 1)
             , blue = image `unsafeIndex` (coords :. 2)
+            , alpha = image `unsafeIndex` (coords :. 3)
         }
     {-# INLINE unsafeGetPixel #-}
     
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3
-imageShape (Size w h) = Z :. h :. w :. 3
+imageShape (Size w h) = Z :. h :. w :. 4
 {-# INLINE imageShape #-}

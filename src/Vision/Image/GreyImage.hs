@@ -56,23 +56,7 @@ instance I.StorableImage GreyImage Word8 where
         
     save path image = I.save path $ toRGBA image
 
-fromRGB :: R.RGBImage -> GreyImage
-fromRGB image =
-    I.fromFunction (I.getSize image) (pixFromRGBA . I.getPixel image)
-  where
-    pixFromRGB (R.Pixel r g b a) =
-        let r' = int r * 30
-            g' = int g * 59
-            b' = int b * 11
-        in word8 $ (r' + g' + b') `quot` 100
-{-# INLINE fromRGBn #-}
-
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2
 imageShape (Size w h) = Z :. h :. w
 {-# INLINE imageShape #-}
-
-int :: Integral a => a -> Int
-int = fromIntegral
-word8 :: Integral a => a -> Word8
-word8 = fromIntegral
