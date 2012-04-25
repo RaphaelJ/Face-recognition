@@ -3,36 +3,25 @@
 module Vision.Image.RGBImage.Storage (
     ) where
 
-import Data.Word
-
-import Data.Array.Repa (
-      Z (..), (:.) (..), (!), unsafeIndex, extent, delay, computeS
-    )
-    
+import Data.Array.Repa (delay, computeS)
 import qualified Data.Array.Repa.IO.DevIL as IL
 
-import Data.Convertible (convert)
+import Data.Convertible (Convertible (..), convert)
 
-import qualified Vision.Image as I
-import Vision.Image.RGBImage.Base
+import Vision.Image.RGBImage.Base (RGBImage (..))
 import Vision.Image.RGBImage.Conversion
-import Vision.Image.GreyImage.Base (GreyImage (..))
-import Vision.Image.RGBAImage.Base (RGBAImage (..))
-
-import Vision.Primitive (Point (..), Size (..))
-
-instance I.StorableImage RGBImage Pixel where
-    load path =
-        IL.runIL $ fromILImage `fmap` IL.readImage path
-    {-# INLINE load #-}
-        
-    save path (RGBImage image) = 
-        IL.runIL $ IL.writeImage path (IL.RGB $ computeS image)
-    {-# INLINE save #-}
-
--- | Converts an image from its DevIL representation to a 'RGBImage'.
-fromILImage :: IL.Image -> RGBImage
-fromILImage (IL.RGB i)  = RGBImage $ delay i
-fromILImage (IL.RGBA i) = convert $ RGBAImage $ delay i
-fromILImage (IL.Grey i) = convert $ GreyImage $ delay i
-{-# INLINE fromILImage #-}
+import Vision.Image.GreyImage.Base as G
+import Vision.Image.RGBAImage.Base as R
+    
+-- | Converts an DevIL image to a RGB image.
+instance Convertible IL.Image RGBImage where
+    safeConvert (IL.RGB i) = return $! RGBImage $ delay i
+    safeConvert (IL.RGBA i) = return $! convert $ R.RGBAImage $ delay i
+    safeConvert (IL.Grey i) = return $! convert $ G.GreyImage $ delay i
+    {-# INLINE safeConvert #-}
+    
+-- | Converts an RGB image to its DevIL representation.
+instance Convertible RGBImage IL.Image where
+    safeConvert (RGBImage image) =
+        return $! IL.RGB $ computeS image
+    {-# INLINE safeConvert #-}

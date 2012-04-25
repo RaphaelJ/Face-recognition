@@ -3,6 +3,8 @@
 module Vision.Image.RGBImage.Conversion (
     ) where
 
+import Data.Word
+
 import Data.Convertible (Convertible (..))
 
 import Vision.Image (fromFunction, getSize, getPixel)
@@ -26,7 +28,12 @@ instance Convertible R.RGBAImage RGBImage where
       where
         pixFromRGBA (R.Pixel r g b a) =
             let a' = int a
-                withAlpha c = int c * a' `quot` 255
+                withAlpha c = word8 $ int c * a' `quot` 255
             in Pixel (withAlpha r) (withAlpha g) (withAlpha b)
         {-# INLINE pixFromRGBA #-}
     {-# INLINE safeConvert #-}
+    
+int :: Integral a => a -> Int
+int = fromIntegral
+word8 :: Integral a => a -> Word8
+word8 = fromIntegral

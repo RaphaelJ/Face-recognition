@@ -10,6 +10,7 @@ module Vision.Image.IntegralImage (
 import Debug.Trace
 
 import Data.Array (Array, (!), array, listArray, bounds, elems)
+import qualified Data.Array.Repa as R
 import Data.Int
 
 import qualified Vision.Image as I
@@ -46,13 +47,16 @@ integralImage image f =
 instance I.Image IntegralImage Int64 where
     fromList size xs =
         IntegralImage $ listArray (imageShape size) xs
+    {-# INLINE fromList #-}
     
     getSize (IntegralImage image) =
         let (h, w) = snd $ bounds $ image
         in Size (w + 1) (h + 1)
+    {-# INLINE getSize #-}
 
     IntegralImage image `getPixel` Point x y = 
        image ! (y, x)
+    {-# INLINE getPixel #-}
        
 -- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
 sumRectangle integral (Rect x y w h) =
@@ -71,6 +75,7 @@ sumRectangle integral (Rect x y w h) =
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> ((Int, Int), (Int, Int))
 imageShape (Size w h) = ((0, 0), (h-1, w-1))
+{-# INLINE imageShape #-}
 
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral

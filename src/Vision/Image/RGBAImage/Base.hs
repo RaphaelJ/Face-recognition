@@ -48,7 +48,7 @@ instance I.Image RGBAImage Pixel where
         in Size w h
     {-# INLINE getSize #-}
 
-    RGBImage image `getPixel` Point x y =
+    RGBAImage image `getPixel` Point x y =
         let coords = Z :. y :. x
         in Pixel {
               red = image ! (coords :. 0)
@@ -58,7 +58,7 @@ instance I.Image RGBAImage Pixel where
         }
     {-# INLINE getPixel #-}
 
-    RGBImage image `unsafeGetPixel` Point x y =
+    RGBAImage image `unsafeGetPixel` Point x y =
         let coords = Z :. y :. x
         in Pixel {
               red = image `unsafeIndex` (coords :. 0)

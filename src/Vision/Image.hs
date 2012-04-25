@@ -1,5 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
 module Vision.Image (
@@ -9,9 +12,12 @@ module Vision.Image (
     , resize, drawRectangle
     ) where
 
+import Data.Convertible (Convertible (..), convert)
+
 import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
 
 import qualified Data.Array.Repa as R
+import qualified Data.Array.Repa.IO.DevIL as IL
 
 -- | The 'Image' class represents images with pixels of type p.
 -- 'Image's are 0 indexed.
@@ -32,10 +38,20 @@ class Image i p | i -> p where
     unsafeGetPixel = getPixel
     {-# INLINE unsafeGetPixel #-} 
 
--- | The 'StorableImage' class adds storage capabilities to the 'Image' class.
-class Image i p => StorableImage i p where
+-- | The 'StorableImage' class adds storage capabilities to images.
+class StorableImage i where
     load :: FilePath -> IO i
     save :: FilePath -> i -> IO ()
+
+instance (Convertible IL.Image i, Convertible i IL.Image)
+         => StorableImage i where
+    load path =
+        IL.runIL $ convert `fmap` IL.readImage path
+    {-# INLINE load #-}
+        
+    save path i = 
+        IL.runIL $ IL.writeImage path (convert i)
+    {-# INLINE save #-}
 
 -- | Resizes the 'Image' using the nearest-neighbor interpolation.
 resize :: Image i p => i -> Size -> i
@@ -47,11 +63,6 @@ resize image size'@(Size w' h') =
   where
     Size w h = getSize image
 {-# INLINABLE resize #-}
-
--- | The 'Convertible' class adds convertion capabilities between two objects
--- ('Image's in this case).
-class Convertible i1 i2 where
-    convert :: i1 -> i2
 
 -- | Draws a rectangle inside the 'Image' using two transformation functions.
 drawRectangle :: Image i p => i
