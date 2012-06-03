@@ -14,40 +14,43 @@ import Vision.Image.GreyImage
 import Vision.Image.RGBAImage
 import Vision.Image.RGBImage
 
+-- Uses a bilinear interpolation to find the value of the pixel at the floating
+-- point coordinates.
+-- Estimates the value of P using A, B, C and D :
+-- q ------ r
+-- -        -
+-- -  P     -
+-- -        -
+-- s ------ t
 bilinearInterpol :: (Pixel p a, Image i p a, Integral a) 
-                 => i -> Point Double Double -> p
+                 => i -> Point Double -> p
 i `bilinearInterpol` Point x y = 
-    
+    if x1 >= 0 && y1 >= 0 && x2 < w && y2 < h
+       then valuesToPix $ interpolateChannels qs rs ss ts
+       else error "Invalid index"
   where
+    Size w h = getSize i
     (x1, y1) = (truncate x, truncate y)
     (x2, y2) = (x1 + 1, y1 + 1)
-    [d_x1, d_y1, d_x2, d_y2] = map fromIntegral [x1, y1, x2, y2]
-    a = 
-        (d_x2 - x) * (d_y2 - y)
-    b = (x - d_x1) * (d_y2 - y)
-    c = (d_x2 - x) * (y - d_y1)
-    d = (x - d_x1) * (y - d_y1)
-    pixVal pond = realToFrac 
+    (d_x1, d_y1, d_x2, d_y2) = 
+        (fromIntegral x1, fromIntegral y1, fromIntegral x2, fromIntegral y2)
+    interpolate q r s t =
+        let q' = fromIntegral q
+            r' = fromIntegral r
+            s' = fromIntegral s
+            t' = fromIntegral t
+        in round $
+              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y) 
+            + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
+    interpolateChannels []      []      []      []      = []
+    interpolateChannels (q:qs') (r:rs') (s:ss') (t:ts') =
+        interpolate q r s t : interpolateChannels qs' rs' ss' ts'
     
-
-        double d_x1 = (double) x1
-         , d_y1 = (double) y1
-         , d_x2 = (double) x2
-         , d_y2 = (double) y2;
-    
-    return a * (d_x2 - x) * (d_y2 - y) + b * (x - d_x1) * (d_y2 - y)
-         + c * (d_x2 - x) * (y - d_y1) + d * (x - d_x1) * (y - d_y1);
-}
-
-inline double bilinear_interpol(
-    const s_partial_der& der, const double x, const double y
-)
-{
-    int x1 = (int) x
-      , y1 = (int) y;
-    int x2 = x1 + 1
-      , y2 = y1 + 1;
-    
+    qs = pixToValues $ i `unsafeGetPixel` Point x1 y1
+    rs = pixToValues $ i `unsafeGetPixel` Point x2 y1
+    ss = pixToValues $ i `unsafeGetPixel` Point x1 y2
+    ts = pixToValues $ i `unsafeGetPixel` Point x2 y2
+{-# INLINE bilinearInterpol #-}
     
 -- | Resizes the 'Image' using the nearest-neighbor interpolation.
 resize :: Image i p a => i -> Size -> i
