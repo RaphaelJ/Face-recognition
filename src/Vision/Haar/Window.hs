@@ -62,7 +62,7 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- | Gets the value of a point (as in the default window) inside the window,
 -- takes care of the window\'s size ratio, so two points in two windows of
 -- different sizes can be compared.
-getValue :: Win -> Point -> Int64
+getValue :: Win -> Point Int -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
     ratio $ integral `I.getPixel` Point destX destY
   where

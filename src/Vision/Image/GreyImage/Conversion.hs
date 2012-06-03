@@ -9,7 +9,7 @@ import Data.Convertible (Convertible (..))
 
 import qualified Data.Array.Repa.IO.DevIL as IL
 
-import Vision.Image (fromFunction, getSize, getPixel)
+import Vision.Image.IImage (fromFunction, getSize, getPixel)
 import Vision.Image.GreyImage.Base (GreyImage (..))
 import Vision.Image.RGBImage.Base as RGB
 import Vision.Image.RGBAImage.Base as RGBA
@@ -19,7 +19,7 @@ instance Convertible RGBA.RGBAImage GreyImage where
     safeConvert image =
         return $! fromFunction (getSize image) (pixFromRGBA . getPixel image)
       where
-        pixFromRGBA (RGBA.Pixel r g b a) =
+        pixFromRGBA (RGBA.RGBAPixel r g b a) =
             word8 $ rgbToGrey r g b * int a `quot` 255
         {-# INLINE pixFromRGBA #-}
     {-# INLINE safeConvert #-}
@@ -29,7 +29,7 @@ instance Convertible RGB.RGBImage GreyImage where
     safeConvert image =
         return $! fromFunction (getSize image) (pixFromRGB . getPixel image)
       where
-        pixFromRGB (RGB.Pixel r g b) =
+        pixFromRGB (RGB.RGBPixel r g b) =
             word8 $ rgbToGrey r g b
         {-# INLINE pixFromRGB #-}
     {-# INLINE safeConvert #-}

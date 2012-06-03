@@ -2,7 +2,7 @@
 
 module Vision.Image.GreyImage.Base (
     -- * Types & constructors
-      GreyImage (..), Pixel
+      GreyImage (..), GreyPixel
     -- * Functions
     , imageShape
     ) where
@@ -14,14 +14,14 @@ import Data.Array.Repa (
     , extent, fromFunction, delay
     )
 
-import qualified Vision.Image as I
+import qualified Vision.Image.IImage as I
 import Vision.Primitive (Point (..), Size (..))
 
 -- | Greyscale image (y :. x).
 newtype GreyImage = GreyImage (Array D DIM2 Word8)
-type Pixel = Word8
+type GreyPixel = Word8
 
-instance I.Image GreyImage Word8 where
+instance I.Image GreyImage Word8 Word8 where
     fromList size xs =
         GreyImage $ delay $ fromListUnboxed (imageShape size) xs
     {-# INLINE fromList #-}
@@ -42,7 +42,17 @@ instance I.Image GreyImage Word8 where
     
     GreyImage image `unsafeGetPixel` Point x y =
         image `unsafeIndex` (Z :. y :. x)
-    {-# INLINE unsafeGetPixel #-}
+    {-# INLINE unsafeGetPixel #-}  
+    
+instance I.Pixel Word8 Word8 where
+    pixToValues pix = [pix]
+    {-# INLINE pixToValues #-}
+    
+    valuesToPix [pix] = pix
+    {-# INLINE valuesToPix #-}
+    
+    pix `pixApply` f = f pix
+    {-# INLINE pixApply #-}
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2

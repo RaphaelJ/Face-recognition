@@ -2,9 +2,7 @@
 
 module Vision.Image.RGBAImage.Base (
     -- * Types & constructors
-      RGBAImage (..), Pixel (..)
-    -- * Functions
-    , imageShape
+      RGBAImage (..), RGBAPixel (..)
     ) where
 
 import Data.Word
@@ -14,33 +12,33 @@ import Data.Array.Repa (
     , fromFunction, extent, delay
     )
 
-import qualified Vision.Image as I
+import qualified Vision.Image.IImage as I
 import Vision.Primitive (Point (..), Size (..))
 
 -- | RGBA image (y :. x :. channel).
 newtype RGBAImage = RGBAImage (Array D DIM3 Word8)
 
-data Pixel = Pixel {
-      red ::   {-# UNPACK #-} !Word8
-    , green :: {-# UNPACK #-} !Word8
-    , blue ::  {-# UNPACK #-} !Word8
-    , alpha :: {-# UNPACK #-} !Word8
+data RGBAPixel = RGBAPixel {
+      rgbaRed ::   {-# UNPACK #-} !Word8
+    , rgbaGreen :: {-# UNPACK #-} !Word8
+    , rgbaBlue ::  {-# UNPACK #-} !Word8
+    , rgbaAlpha :: {-# UNPACK #-} !Word8
     } deriving (Show, Read, Eq)
 
-instance I.Image RGBAImage Pixel where
+instance I.Image RGBAImage RGBAPixel Word8 where
     fromList size xs =
         RGBAImage $ delay $ fromListUnboxed (imageShape size) $ 
-            concat [ [r, g, b, a] | Pixel r g b a <- xs ]
+            concat [ [r, g, b, a] | RGBAPixel r g b a <- xs ]
     {-# INLINE fromList #-}
     
     fromFunction size f =
         RGBAImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
             let point = Point x y
             in case c of
-                 0 -> red $ f point
-                 1 -> green $ f point
-                 2 -> blue $ f point
-                 3 -> alpha $ f point
+                 0 -> rgbaRed $ f point
+                 1 -> rgbaGreen $ f point
+                 2 -> rgbaBlue $ f point
+                 3 -> rgbaAlpha $ f point
     {-# INLINE fromFunction #-}
 
     getSize (RGBAImage image) =
@@ -50,23 +48,33 @@ instance I.Image RGBAImage Pixel where
 
     RGBAImage image `getPixel` Point x y =
         let coords = Z :. y :. x
-        in Pixel {
-              red = image ! (coords :. 0)
-            , green = image ! (coords :. 1)
-            , blue = image ! (coords :. 2)
-            , alpha = image ! (coords :. 3)
+        in RGBAPixel {
+              rgbaRed = image ! (coords :. 0)
+            , rgbaGreen = image ! (coords :. 1)
+            , rgbaBlue = image ! (coords :. 2)
+            , rgbaAlpha = image ! (coords :. 3)
         }
     {-# INLINE getPixel #-}
 
     RGBAImage image `unsafeGetPixel` Point x y =
         let coords = Z :. y :. x
-        in Pixel {
-              red = image `unsafeIndex` (coords :. 0)
-            , green = image `unsafeIndex` (coords :. 1)
-            , blue = image `unsafeIndex` (coords :. 2)
-            , alpha = image `unsafeIndex` (coords :. 3)
+        in RGBAPixel {
+              rgbaRed = image `unsafeIndex` (coords :. 0)
+            , rgbaGreen = image `unsafeIndex` (coords :. 1)
+            , rgbaBlue = image `unsafeIndex` (coords :. 2)
+            , rgbaAlpha = image `unsafeIndex` (coords :. 3)
         }
     {-# INLINE unsafeGetPixel #-}
+    
+instance I.Pixel RGBAPixel Word8 where
+    pixToValues (RGBAPixel r g b a) = [r, g, b, a]
+    {-# INLINE pixToValues #-}
+    
+    valuesToPix [r, g, b, a] = RGBAPixel r g b a
+    {-# INLINE valuesToPix #-}
+    
+    RGBAPixel r g b a `pixApply` f = RGBAPixel (f r) (f g) (f b) (f a) 
+    {-# INLINE pixApply #-}
     
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3

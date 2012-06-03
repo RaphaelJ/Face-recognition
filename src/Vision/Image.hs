@@ -1,71 +1,68 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-
 module Vision.Image (
-    -- * Types classes
-      Image (..), StorableImage (..), Convertible (..)
+      module Vision.Image.IImage
+    , module Vision.Image.GreyImage
+    , module Vision.Image.RGBAImage
+    , module Vision.Image.RGBImage
+    
     -- * Misc images tranformations
     , resize, drawRectangle
     ) where
 
-import Data.Convertible (Convertible (..), convert)
+import Vision.Primitive
+import Vision.Image.IImage
+import Vision.Image.GreyImage
+import Vision.Image.RGBAImage
+import Vision.Image.RGBImage
 
-import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
-
-import qualified Data.Array.Repa as R
-import qualified Data.Array.Repa.IO.DevIL as IL
-
--- | The 'Image' class represents images with pixels of type p.
--- 'Image's are 0 indexed.
--- 
--- Minimal complete definition: 'fromList', 'getSize' and 'getPixel'.
-class Image i p | i -> p where
-    fromList :: Size -> [p] -> i
+bilinearInterpol :: (Pixel p a, Image i p a, Integral a) 
+                 => i -> Point Double Double -> p
+i `bilinearInterpol` Point x y = 
     
-    fromFunction :: Size -> (Point -> p) -> i
+  where
+    (x1, y1) = (truncate x, truncate y)
+    (x2, y2) = (x1 + 1, y1 + 1)
+    [d_x1, d_y1, d_x2, d_y2] = map fromIntegral [x1, y1, x2, y2]
+    a = 
+        (d_x2 - x) * (d_y2 - y)
+    b = (x - d_x1) * (d_y2 - y)
+    c = (d_x2 - x) * (y - d_y1)
+    d = (x - d_x1) * (y - d_y1)
+    pixVal pond = realToFrac 
     
-    getSize :: i -> Size
+
+        double d_x1 = (double) x1
+         , d_y1 = (double) y1
+         , d_x2 = (double) x2
+         , d_y2 = (double) y2;
     
-    getPixel, unsafeGetPixel :: i -> Point -> p
-        
-    fromFunction size f = fromList size [ f p | p <- sizeRange size ]
-    {-# INLINE fromFunction #-}
+    return a * (d_x2 - x) * (d_y2 - y) + b * (x - d_x1) * (d_y2 - y)
+         + c * (d_x2 - x) * (y - d_y1) + d * (x - d_x1) * (y - d_y1);
+}
+
+inline double bilinear_interpol(
+    const s_partial_der& der, const double x, const double y
+)
+{
+    int x1 = (int) x
+      , y1 = (int) y;
+    int x2 = x1 + 1
+      , y2 = y1 + 1;
     
-    unsafeGetPixel = getPixel
-    {-# INLINE unsafeGetPixel #-} 
-
--- | The 'StorableImage' class adds storage capabilities to images.
-class StorableImage i where
-    load :: FilePath -> IO i
-    save :: FilePath -> i -> IO ()
-
-instance (Convertible IL.Image i, Convertible i IL.Image)
-         => StorableImage i where
-    load path =
-        IL.runIL $ convert `fmap` IL.readImage path
-    {-# INLINE load #-}
-        
-    save path i = 
-        IL.runIL $ IL.writeImage path (convert i)
-    {-# INLINE save #-}
-
+    
 -- | Resizes the 'Image' using the nearest-neighbor interpolation.
-resize :: Image i p => i -> Size -> i
+resize :: Image i p a => i -> Size -> i
 resize image size'@(Size w' h') =
     fromFunction size' $ \(Point x' y') ->
-        let x = x' * w `quot` w'
-            y = y' * h `quot` h'
+        let x = x' * ratioW 
+            y = y' * ratioH
         in image `unsafeGetPixel` Point x y
   where
     Size w h = getSize image
+    (ratioW, ratioH) = (w `div` w', h `div` h')
 {-# INLINABLE resize #-}
 
--- | Draws a rectangle inside the 'Image' using two transformation functions.
-drawRectangle :: Image i p => i
+-- | Draws a rectangle inside the 'IImage' using two transformation functions.
+drawRectangle :: Image i p a => i
               -> (p -> p) -- ^ Border transformation
               -> (p -> p) -- ^ Background transformation
               -> Rect -> i

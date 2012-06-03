@@ -8,7 +8,7 @@ import Primitives
 
 main = do
     filename <- (!! 0) `fmap` getArgs
-    angle <- (read . (!! 1)) `fmap` getArgs
+    angle <- (read . head) `fmap` getArgs
     image <- I.load filename Nothing
     I.save "out.png" (rotate angle image)
 

@@ -13,7 +13,7 @@ import Data.Array (Array, (!), array, listArray, bounds, elems)
 import qualified Data.Array.Repa as R
 import Data.Int
 
-import qualified Vision.Image as I
+import qualified Vision.Image.IImage as I
 import qualified Vision.Image.GreyImage as G
 import Vision.Primitive (Point (..), Size (..), Rect (..))
 
@@ -44,7 +44,7 @@ integralImage image f =
     value x y = f $ int64 $ image `I.getPixel` Point x y
 {-# INLINABLE integralImage #-}
 
-instance I.Image IntegralImage Int64 where
+instance I.IImage IntegralImage Int64 where
     fromList size xs =
         IntegralImage $ listArray (imageShape size) xs
     {-# INLINE fromList #-}

@@ -7,11 +7,11 @@ module Vision.Primitive (
 
 import Data.Ix
 
-data Point = Point { 
-      pX :: {-# UNPACK #-} !Int, pY :: {-# UNPACK #-} !Int
+data Point a = Point { 
+      pX :: {-# UNPACK #-} !a, pY :: {-# UNPACK #-} !a
     } deriving (Show, Read, Eq, Ord)
     
-instance Ix Point where
+instance Ix a => Ix (Point a) where
     range (Point x1 y1, Point x2 y2) =
         map (uncurry Point) $ range ((x1, y1), (x2, y2))
     {-# INLINE range #-}
@@ -39,11 +39,11 @@ data Rect = Rect {
     } deriving (Show, Read, Eq)
     
 -- | Returns the bounds of coordinates of a rectangle of the given size.
-sizeBounds :: Size -> (Point, Point)
+sizeBounds :: Size -> (Point Int, Point Int)
 sizeBounds (Size w h) = (Point 0 0, Point (w-1) (h-1))
 {-# INLINE sizeBounds #-}
     
 -- | Returns a list of coordinates within a rectangle of the given size.
-sizeRange :: Size -> [Point]
+sizeRange :: Size -> [Point Int]
 sizeRange = range . sizeBounds
 {-# INLINE sizeRange #-}
