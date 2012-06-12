@@ -44,7 +44,7 @@ integralImage image f =
     value x y = f $ int64 $ image `I.getPixel` Point x y
 {-# INLINABLE integralImage #-}
 
-instance I.IImage IntegralImage Int64 where
+instance I.Image IntegralImage Int64 Int64 where
     fromList size xs =
         IntegralImage $ listArray (imageShape size) xs
     {-# INLINE fromList #-}
@@ -57,6 +57,16 @@ instance I.IImage IntegralImage Int64 where
     IntegralImage image `getPixel` Point x y = 
        image ! (y, x)
     {-# INLINE getPixel #-}
+    
+instance I.Pixel Int64 Int64 where
+    pixToValues pix = [pix]
+    {-# INLINE pixToValues #-}
+    
+    valuesToPix [pix] = pix
+    {-# INLINE valuesToPix #-}
+    
+    pix `pixApply` f = f pix
+    {-# INLINE pixApply #-}
        
 -- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
 sumRectangle integral (Rect x y w h) =
