@@ -8,7 +8,7 @@ module Vision.Primitive (
 import Data.Ix
 
 data Point a = Point { 
-      pX :: {-# UNPACK #-} !a, pY :: {-# UNPACK #-} !a
+      pX :: !a, pY :: !a
     } deriving (Show, Read, Eq, Ord)
     
 instance Ix a => Ix (Point a) where
