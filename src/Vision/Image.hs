@@ -14,31 +14,35 @@ import Vision.Image.GreyImage
 import Vision.Image.RGBAImage
 import Vision.Image.RGBImage
 
--- Uses a bilinear interpolation to find the value of the pixel at the floating
--- point coordinates.
+-- | Uses a bilinear interpolation to find the value of the pixel at the
+-- floating point coordinates.
 -- Estimates the value of P using A, B, C and D :
 -- q ------ r
 -- -        -
 -- -  P     -
 -- -        -
 -- s ------ t
-bilinearInterpol :: (Pixel p a, Image i p a, Integral a) 
-                 => i -> Point Double -> p
+bilinearInterpol, unsafeBilinearInterpol 
+    :: (Pixel p a, Image i p a, Integral a) 
+    => i -> Point Double -> p
 i `bilinearInterpol` Point x y = 
     if x1 >= 0 && y1 >= 0 && x2 < w && y2 < h
-       then valuesToPix $ interpolateChannels qs rs ss ts
+       then i `unsafeBilinearInterpol` Point x ys
        else error "Invalid index"
   where
     Size w h = getSize i
+
+-- | Uses a bilinear interpolation whithout checking bounds.
+i `unsafeBilinearInterpol` Point x y =
+    valuesToPix $ interpolateChannels qs rs ss ts
+  where
     (x1, y1) = (truncate x, truncate y)
     (x2, y2) = (x1 + 1, y1 + 1)
-    (d_x1, d_y1, d_x2, d_y2) = 
+    (d_x1, d_y1, d_x2, d_y2) =
         (fromIntegral x1, fromIntegral y1, fromIntegral x2, fromIntegral y2)
     interpolate q r s t =
-        let q' = fromIntegral q
-            r' = fromIntegral r
-            s' = fromIntegral s
-            t' = fromIntegral t
+        let (q', r') = (fromIntegral q, fromIntegral r)
+            (s', t') = (fromIntegral s, fromIntegral t)
         in round $
               q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y) 
             + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
@@ -56,12 +60,14 @@ i `bilinearInterpol` Point x y =
 resize :: Image i p a => i -> Size -> i
 resize image size'@(Size w' h') =
     fromFunction size' $ \(Point x' y') ->
-        let x = x' * ratioW 
+        let x = x' * ratioW
             y = y' * ratioH
-        in image `unsafeGetPixel` Point x y
+        in image `bilinearInterpol` Point x y
   where
     Size w h = getSize image
-    (ratioW, ratioH) = (w `div` w', h `div` h')
+    (ratioW, ratioH) = (
+          fromIntegral w / fromIntegral w', fromIntegral h / fromIntegral h'
+    )
 {-# INLINABLE resize #-}
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.
