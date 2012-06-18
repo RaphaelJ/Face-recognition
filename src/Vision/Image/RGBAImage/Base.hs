@@ -70,7 +70,7 @@ instance I.Pixel RGBAPixel Word8 where
     pixToValues (RGBAPixel r g b a) = [r, g, b, a]
     {-# INLINE pixToValues #-}
     
-    valuesToPix [r, g, b, a] = RGBAPixel r g b a
+    valuesToPix (r : g : b : a : _) = RGBAPixel r g b a
     {-# INLINE valuesToPix #-}
     
     RGBAPixel r g b a `pixApply` f = RGBAPixel (f r) (f g) (f b) (f a) 

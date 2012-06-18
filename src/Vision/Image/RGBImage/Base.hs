@@ -66,7 +66,7 @@ instance I.Pixel RGBPixel Word8 where
     pixToValues (RGBPixel r g b) = [r, g, b]
     {-# INLINE pixToValues #-}
     
-    valuesToPix [r, g, b] = RGBPixel r g b
+    valuesToPix (r : g : b : _) = RGBPixel r g b
     {-# INLINE valuesToPix #-}
     
     RGBPixel r g b `pixApply` f = RGBPixel (f r) (f g) (f b)

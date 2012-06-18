@@ -2,7 +2,7 @@
 
 module Vision.Image.IntegralImage (
     -- * Type
-      IntegralImage (..), Pixel
+      IntegralImage (..), IIPixel
     -- * Functions 
     , integralImage, sumRectangle, imageShape
     ) where
@@ -19,7 +19,7 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 
 newtype IntegralImage = IntegralImage (Array (Int, Int) Int64)
     deriving (Show, Eq)
-type Pixel = Int64
+type IIPixel = Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
 integralImage :: G.GreyImage -> (Int64 -> Int64) -> IntegralImage

@@ -48,7 +48,7 @@ instance I.Pixel Word8 Word8 where
     pixToValues pix = [pix]
     {-# INLINE pixToValues #-}
     
-    valuesToPix [pix] = pix
+    valuesToPix (pix:_) = pix
     {-# INLINE valuesToPix #-}
     
     pix `pixApply` f = f pix

@@ -16,7 +16,8 @@ main = do
             
             print rs
             print $ length rs
-        _ -> putStrLn "Usage: HaarDetector <classifier> <image> <output>"
+        _ ->
+            putStrLn "Usage: HaarDetector <classifier> <image> <output>"
 
 drawRectangles i rs =
     foldl' step i rs

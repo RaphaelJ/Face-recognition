@@ -29,6 +29,7 @@ instance Convertible R.RGBAImage RGBImage where
         pixFromRGBA (R.RGBAPixel r g b a) =
             let a' = int a
                 withAlpha c = word8 $ int c * a' `quot` 255
+                {-# INLINE withAlpha #-}
             in RGBPixel (withAlpha r) (withAlpha g) (withAlpha b)
         {-# INLINE pixFromRGBA #-}
     {-# INLINE safeConvert #-}

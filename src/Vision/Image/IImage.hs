@@ -1,13 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Vision.Image.IImage (
     -- * Types classes
-      Image (..), Pixel (..), StorableImage (..), Convertible (..)
+      Image (..), Pixel (..), StorableImage (..), Convertible (..), convert
     ) where
 
 import Data.Convertible (Convertible (..), convert)
@@ -24,12 +25,16 @@ import qualified Data.Array.Repa.IO.DevIL as IL
 -- Minimal complete definition: 'fromList', 'getSize' and 'getPixel'.
 class Pixel p a => Image i p a | i -> p a where
     fromList :: Size -> [p] -> i
+    toList :: i -> [p]
     
-    fromFunction :: Size -> (Point Int -> p) -> i
+    fromFunction :: Size -> (Point -> p) -> i
     
     getSize :: i -> Size
     
-    getPixel, unsafeGetPixel :: i -> Point Int -> p
+    getPixel, unsafeGetPixel :: i -> Point -> p
+    
+    toList i = map (i `unsafeGetPixel`) (sizeRange $ getSize i)
+    {-# INLINE toList #-} 
         
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
     {-# INLINE fromFunction #-}
@@ -54,6 +59,16 @@ class StorableImage i where
     load :: FilePath -> IO i
     save :: FilePath -> i -> IO ()
     
+-- | Makes every image showable.
+instance (Image i p a, Show p) => Show i where
+    show = show . toList
+    
+-- | Makes every image comparable.
+instance (Image i p a, Eq p) => Eq i where
+    a == b = toList a == toList b
+    
+-- | Makes every image convertible from and to a DevIL's Image storable into
+-- a file.
 instance (Convertible IL.Image i, Convertible i IL.Image)
          => StorableImage i where
     load path =

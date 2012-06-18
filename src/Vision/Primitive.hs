@@ -7,25 +7,26 @@ module Vision.Primitive (
 
 import Data.Ix
 
-data Point a = Point { 
-      pX :: !a, pY :: !a
+data Point = Point { 
+      pX :: {-# UNPACK #-} !Int, pY :: {-# UNPACK #-} !Int
     } deriving (Show, Read, Eq, Ord)
     
-instance Ix a => Ix (Point a) where
+instance Ix Point where
+    -- Remark: ranges are in row-major order (columns of a same row first)
     range (Point x1 y1, Point x2 y2) =
-        map (uncurry Point) $ range ((x1, y1), (x2, y2))
+        map (uncurry $ flip Point) $ range ((y1, x1), (y2, x2))
     {-# INLINE range #-}
     
     index (Point x1 y1, Point x2 y2) (Point x y) = 
-        index ((x1, y1), (x2, y2)) (x, y)
+        index ((y1, x1), (y2, x2)) (y, x)
     {-# INLINE index #-}
         
     inRange (Point x1 y1, Point x2 y2) (Point x y) =
-        inRange ((x1, y1), (x2, y2)) (x, y)
+        inRange ((y1, x1), (y2, x2)) (y, x)
     {-# INLINE inRange #-}
 
     rangeSize (Point x1 y1, Point x2 y2) =
-        rangeSize ((x1, y1), (x2, y2))
+        rangeSize ((y1, x1), (y2, x2))
     {-# INLINE rangeSize #-}
 
 data Size = Size { 
@@ -39,11 +40,11 @@ data Rect = Rect {
     } deriving (Show, Read, Eq)
     
 -- | Returns the bounds of coordinates of a rectangle of the given size.
-sizeBounds :: Size -> (Point Int, Point Int)
+sizeBounds :: Size -> (Point, Point)
 sizeBounds (Size w h) = (Point 0 0, Point (w-1) (h-1))
 {-# INLINE sizeBounds #-}
     
 -- | Returns a list of coordinates within a rectangle of the given size.
-sizeRange :: Size -> [Point Int]
+sizeRange :: Size -> [Point]
 sizeRange = range . sizeBounds
 {-# INLINE sizeRange #-}

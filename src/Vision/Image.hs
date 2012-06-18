@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
+
 module Vision.Image (
       module Vision.Image.IImage
     , module Vision.Image.GreyImage
@@ -7,13 +11,17 @@ module Vision.Image (
     -- * Misc images tranformations
     , resize, drawRectangle
     ) where
+        
+import Debug.Trace
+    
+import Data.Convertible (safeConvert, convert)
 
 import Vision.Primitive
 import Vision.Image.IImage
 import Vision.Image.GreyImage
 import Vision.Image.RGBAImage
 import Vision.Image.RGBImage
-
+    
 -- | Uses a bilinear interpolation to find the value of the pixel at the
 -- floating point coordinates.
 -- Estimates the value of P using A, B, C and D :
@@ -24,16 +32,16 @@ import Vision.Image.RGBImage
 -- s ------ t
 bilinearInterpol, unsafeBilinearInterpol 
     :: (Pixel p a, Image i p a, Integral a) 
-    => i -> Point Double -> p
-i `bilinearInterpol` Point x y = 
-    if x1 >= 0 && y1 >= 0 && x2 < w && y2 < h
-       then i `unsafeBilinearInterpol` Point x ys
+    => i -> (Double, Double) -> p
+i `bilinearInterpol` (x, y) = 
+    if x >= 0 && y >= 0 && x < fromIntegral w && y < fromIntegral h
+       then i `unsafeBilinearInterpol` (x, y)
        else error "Invalid index"
   where
     Size w h = getSize i
 
 -- | Uses a bilinear interpolation whithout checking bounds.
-i `unsafeBilinearInterpol` Point x y =
+i `unsafeBilinearInterpol` (x, y) =
     valuesToPix $ interpolateChannels qs rs ss ts
   where
     (x1, y1) = (truncate x, truncate y)
@@ -60,14 +68,11 @@ i `unsafeBilinearInterpol` Point x y =
 resize :: Image i p a => i -> Size -> i
 resize image size'@(Size w' h') =
     fromFunction size' $ \(Point x' y') ->
-        let x = x' * ratioW
-            y = y' * ratioH
-        in image `bilinearInterpol` Point x y
+        let x = x' * w `quot` w'
+            y = y' * h `quot` h'
+        in image `unsafeGetPixel` Point x y
   where
     Size w h = getSize image
-    (ratioW, ratioH) = (
-          fromIntegral w / fromIntegral w', fromIntegral h / fromIntegral h'
-    )
 {-# INLINABLE resize #-}
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.
