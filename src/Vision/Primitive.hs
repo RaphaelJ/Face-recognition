@@ -12,7 +12,7 @@ data Point = Point {
     } deriving (Show, Read, Eq, Ord)
     
 instance Ix Point where
-    -- Remark: ranges are in row-major order (columns of a same row first)
+    -- Ranges are in row-major order (columns of a same row first)
     range (Point x1 y1, Point x2 y2) =
         map (uncurry $ flip Point) $ range ((y1, x1), (y2, x2))
     {-# INLINE range #-}

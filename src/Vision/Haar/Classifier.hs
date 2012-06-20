@@ -27,3 +27,4 @@ instance Classifier HaarClassifier Win Bool where
                        then val >= thres
                        else val < thres
         in (valid, 1.0)
+    {-# INLINE cClassScore #-}

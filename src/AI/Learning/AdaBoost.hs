@@ -39,6 +39,7 @@ class Classifier c t cl | c t -> cl where
     cClassScore :: c -> t -> (cl, Weight)
 
     classifier `cClass` test = fst $ classifier `cClassScore` test
+    {-# INLINE cClass #-}
 
 -- | A 'StrongClassifier' is a trained container with a set of classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
