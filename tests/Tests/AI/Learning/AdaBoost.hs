@@ -2,6 +2,7 @@ module Tests.AI.Learning.AdaBoost (
       tests
     ) where
 
+import Data.List
 import Data.List.Split
 
 import Test.Framework.Providers.HUnit
@@ -24,6 +25,6 @@ data BupaTestCase = BupaTestCase {
 -- (http://www.cs.huji.ac.il/~shais/datasets/ClassificationDatasets.html) 
 -- described at http://www.cs.huji.ac.il/~shais/datasets/bupa/bupa.names
 caseAdaBoost = do
-    content <- readFile boostingDataSet
---     map (splitOn ",") $ lines content
+    content <- read `fmap` readFile boostingDataSet
+    let (training, testing) = splitAt (length content * 100 `div` 75) content
     assertBool "OK" True
