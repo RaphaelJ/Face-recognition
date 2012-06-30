@@ -9,6 +9,7 @@ import Test.Framework.Providers.HUnit
 import Test.HUnit
 
 import AI.Learning.AdaBoost 
+import AI.Learning.DecisionStump
 
 tests = [
       testCase "AdaBoost performances" caseAdaBoost
@@ -27,4 +28,5 @@ data BupaTestCase = BupaTestCase {
 caseAdaBoost = do
     content <- read `fmap` readFile boostingDataSet
     let (training, testing) = splitAt (length content * 100 `div` 75) content
+    
     assertBool "OK" True

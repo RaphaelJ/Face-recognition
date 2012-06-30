@@ -75,10 +75,10 @@ instance (Classifier weak t cl, Ord cl)
 -- The weak classifier must be able to classify the tests.
 adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl, Show cl)
          => Int -> [t]
-            -- | The selector which builds an optimal 'WeakClassifier' for the
-            -- set of tests.
-            -> ([(t, Weight)] -> (c, Weight))
-            -> StrongClassifier c
+         -- | The selector which builds an optimal 'WeakClassifier' for the
+         -- set of tests.
+         -> ([(t, Weight)] -> (c, Weight))
+         -> StrongClassifier c
 adaBoost steps initTests weakSelector =
     StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
   where

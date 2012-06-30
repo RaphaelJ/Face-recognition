@@ -60,7 +60,7 @@ selectHaarClassifier tests =
     -- Lists all possibles classifier configurations associated with theirs
     -- error for a feature and the set of tests.
     featureClassifiers feature =
-        -- The first computed classifier will give "True" for each test, so its
+        -- The first computed classifier will give 'True' for each test, so its
         -- error score is the weight of invalid tests.
         fst $ foldl' (\(cs, trueError) (value, weights) ->
             let c1 = (HaarClassifier feature value True, trueError)
