@@ -17,10 +17,14 @@ import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
 
-import AI.Learning.AdaBoost (
-      TrainingTest (..), Classifier (..)
-    , Weight, StrongClassifier, adaBoost
+import AI.Learning.AdaBoost (adaBoost)
+import AI.Learning.Classifier (
+      TrainingTest (..), Classifier (..), Weight, Score, classifierScore
     )
+import AI.Learning.DecisionStump (
+      DecisionStump, DecisionStumpTest (..), trainDecisionStump
+    )
+
 import Vision.Haar.Classifier (HaarClassifier (..))
 import Vision.Haar.Feature (HaarFeature, features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
@@ -31,8 +35,7 @@ import Vision.Primitive (Size (..), Rect (..))
 
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {
-      tiWindow :: !Win
-    , tiValid :: !Bool
+      tiWindow :: !Win, tiValid :: !Bool
     }
 
 instance TrainingTest TrainingImage Bool where
@@ -44,61 +47,23 @@ instance Classifier HaarClassifier TrainingImage Bool where
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
 -- The classifier selection can benefit from parallel computing.
-selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Weight)
-selectHaarClassifier tests =
-    -- Selects the best classifier over all features.
-    minimumBy weight bestClassifiers
+selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Score)
+selectHaarClassifier ts =
+    -- Selects the best 'DecisionStump' over all features.
+    maximumBy (compare `on` snd) bestClassifiers
   where
-    -- Selects the best classifier for each feature, using parallel computing.
+    -- Compute the best 'DecisionStump' for each feature on the set of tests,
+    -- using parallel computing.
     bestClassifiers =
         let parStrategy = evalTuple2 rseq rseq
-        in parMap parStrategy bestClassifier features
+        in parMap parStrategy featureStump features 
     
-    -- Selects the best classifier threshold for a feature.
-    bestClassifier = minimumBy weight . featureClassifiers
-    
-    -- Lists all possibles classifier configurations associated with theirs
-    -- error for a feature and the set of tests.
-    featureClassifiers feature =
-        -- The first computed classifier will give 'True' for each test, so its
-        -- error score is the weight of invalid tests.
-        fst $ foldl' (\(cs, trueError) (value, weights) ->
-            let c1 = (HaarClassifier feature value True, trueError)
-                falseError = 1.0 - trueError
-                c2 = (HaarClassifier feature value False, falseError)
-                
-                trueError' = trueError + (sum weights)
-            in (c1 : c2 : cs, trueError')
-        ) ([], weightInvalid) (featureValues feature tests)
-
-    errorLevel (classifier@(HaarClassifier feature value parity), e) =
-        let bad = sum $ map snd $ filter (\(t, w) ->
-                    classifier `cClass` t /= tiValid t
-                ) tests
-        in (e, bad, abs $ e - bad)
-    
-    -- Sums the weight of all non valid tests.
-    !weightInvalid = sum $! map snd $! filter (not . tiValid . fst) tests
-    
-    weight = compare `on` snd
-
--- | Computes all feature\'s values with a set of tests, sorted and grouped by
--- value.
--- Keeps the test weight. Negative for valid tests, positive for valid tests.
-featureValues :: HaarFeature -> [(TrainingImage, Weight)] -> [(Int64, [Weight])]
-featureValues feature =
-    groupByValue . sortBy (compare `on` fst) . map computeValue
-  where
-    -- Computes the feature value and its weight.
-    computeValue (t, w) =
-        let !w' = if tiValid t then w else -w
-            v = compute feature (tiWindow t)
-        in (v, w')
-
-    -- Groups the same values in a tuple containing the value and the list of
-    -- weights.
-    groupByValue =
-        map (\((v, w) : xs) -> (v, w : map snd xs)) . groupBy ((==) `on` fst)
+    featureStump f =
+        let (stump, score) = trainDecisionStump [
+                  (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w) | 
+                  (t, w) <- ts
+                ]
+        in (HaarClassifier f stump, score)
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (bad & good).
@@ -111,14 +76,17 @@ train directory steps savePath = do
     putStrLn "\tbad/ loaded"
     let tests = good ++ bad
 
-    putStrLn "Train classifier ..."
+    putStrLn $ "Train classifier on "++ show (length tests) ++ " image(s) ..."
     let classifier = adaBoost steps tests selectHaarClassifier
     print classifier
+    
+    let score = classifierScore classifier tests
+    putStrLn $ "Classifier score is " ++ show (score * 100) ++ "%"
 
     putStrLn "Save classifier ..."
     writeFile savePath $ show classifier
   where
-    loadIntegrals valid = fmap (trainingImages valid) . loadImages
+    loadIntegrals isValid = (trainingImages isValid `fmap`) . loadImages
 
     loadImages dir = do
         paths <- getDirectoryContents $ dir
@@ -134,7 +102,7 @@ train directory steps savePath = do
 -- Compute the 'IntegralImage' and initialises a full image 'Win' for each
 -- image.
 trainingImages :: Bool -> [G.GreyImage] -> [TrainingImage]
-trainingImages valid =
+trainingImages isValid =
     map trainingImage
   where
     rect = Rect 0 0 windowWidth windowHeight
@@ -142,4 +110,4 @@ trainingImages valid =
         let integral = II.integralImage image id
             squaredIntegral = II.integralImage image (^2)
             window = win rect integral squaredIntegral
-        in TrainingImage window valid
+        in TrainingImage window isValid

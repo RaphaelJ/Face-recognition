@@ -3,25 +3,26 @@
 
 module AI.Learning.DecisionStump (
     -- * Types
-      DecisionStump (..)
+      DecisionStump (..), DecisionStumpTest (..)
     -- * Functions
     , trainDecisionStump
     ) where
-        
+
 import Data.Function
 import Data.List
 
-import AI.Learning.AdaBoost (TrainingTest (..), Classifier (..), Weight)
+import AI.Learning.Classifier (
+      TrainingTest (..), Classifier (..), Weight, Score
+    )
 
 data DecisionStump a = DecisionStump {
       dsThreshold :: !a
     , dsParity :: !Bool -- ^ True: higher/equal than threshold, False: lower.
-    } deriving (Show, Read)
+    } deriving (Show, Read, Eq)
     
 data DecisionStumpTest a = DecisionStumpTest {
-      dstValue :: !a
-    , dstValid :: !Bool
-    } deriving (Show, Read)
+      dstValue :: !a, dstValid :: !Bool
+    } deriving (Show, Read, Eq)
     
 instance Ord a => Classifier (DecisionStump a) a Bool where
     DecisionStump thres parity `cClassScore` val =
@@ -43,32 +44,33 @@ instance Ord a => Classifier (DecisionStump a) (DecisionStumpTest a) Bool where
 -- positive weight and negative tests a negative weight. Returns the stump with
 -- its error score.
 trainDecisionStump :: Ord a => [(DecisionStumpTest a, Weight)] 
-                         -> (DecisionStump a, Weight)
+                   -> (DecisionStump a, Score)
 trainDecisionStump ts =
     -- Selects the best classifier over all features.
-    minimumBy weight stumps
+    maximumBy score stumps
   where
     -- Lists all possibles stumps configurations associated with theirs
     -- error for the set of tests.
     stumps =
         -- The first computed stump will give 'True' for each test, so its
-        -- error score is the weight of invalid tests.
-        fst $ foldl' step ([], weightInvalid) (groupedValues testValues)
+        -- score is the weight of valid tests.
+        fst $ foldl' step ([], weightValid) (groupedValues testValues)
     
-    step (cs, trueError) (value, weights) =
-        let c1 = (DecisionStump value True, trueError)
-            falseError = 1.0 - trueError
-            c2 = (DecisionStump value False, falseError)
+    step (cs, trueScore) (value, weights) =
+        let c1 = (DecisionStump value True, trueScore)
+            falseScore = 1.0 - trueScore
+            c2 = (DecisionStump value False, falseScore)
             
-            trueError' = trueError + (sum weights)
-        in (c1 : c2 : cs, trueError')
+            trueScore' = trueScore - sum weights
+        in (c1 : c2 : cs, trueScore')
 
-    -- Sums the weight of all non valid tests.
-    weightInvalid = - sum [ w | (t, w) <- ts, not $ dstValid t ]
+    -- Sums the weight of all valid tests.
+    weightValid = sum [ w | (t, w) <- ts, dstValid t ]
     
-    testValues = map (\(t, w) -> (dstValue t, w)) ts
+    testValues = 
+        map (\(t, w) -> (dstValue t, if dstValid t then w else -w)) ts
     
-    weight = compare `on` snd
+    score = compare `on` snd
     
 -- | Sorts and groups values. Returns each distinct value with a list of 
 -- weights.
