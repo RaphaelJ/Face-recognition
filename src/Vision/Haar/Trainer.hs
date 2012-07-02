@@ -14,12 +14,15 @@ import Control.Parallel.Strategies
 import Data.Function
 import Data.Int
 import Data.List
+import Data.Ratio
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
+import System.Random (mkStdGen, randoms)
 
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
-      TrainingTest (..), Classifier (..), Weight, Score, classifierScore
+      TrainingTest (..), Classifier (..), Weight, Score, splitTests
+    , classifierScore
     )
 import AI.Learning.DecisionStump (
       DecisionStump, DecisionStumpTest (..), trainDecisionStump
@@ -74,13 +77,14 @@ train directory steps savePath = do
     putStrLn "\tgood/ loaded"
     bad <- loadIntegrals False (directory </> "bad")
     putStrLn "\tbad/ loaded"
-    let tests = good ++ bad
+    let (training, testing) = splitTests (90 % 100) $ unsortList (good ++ bad)
 
-    putStrLn $ "Train classifier on "++ show (length tests) ++ " image(s) ..."
-    let classifier = adaBoost steps tests selectHaarClassifier
+    putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
+    let classifier = adaBoost steps training selectHaarClassifier
     print classifier
     
-    let score = classifierScore classifier tests
+    putStrLn $ "Test on " ++ show (length testing) ++ " image(s) ..."
+    let score = classifierScore classifier testing
     putStrLn $ "Classifier score is " ++ show (score * 100) ++ "%"
 
     putStrLn "Save classifier ..."
@@ -97,6 +101,9 @@ train directory steps savePath = do
         return $ I.resize img $ Size windowWidth windowHeight
 
     excludeHidden = filter $ ((/=) '.') . head
+
+unsortList =
+    map snd . sortBy (compare `on` fst) . zip (randoms $ mkStdGen 1 :: [Int])
 
 -- | Accepts a list of images with a boolean indicating if the image is valid.
 -- Compute the 'IntegralImage' and initialises a full image 'Win' for each

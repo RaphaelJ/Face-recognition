@@ -9,7 +9,7 @@ module AI.Learning.Classifier (
     -- * Types
     , Weight, Score, StrongClassifier (..)
     -- * Functions
-    , classifierScore
+    , splitTests, classifierScore
     ) where
 
 import Data.Function
@@ -65,9 +65,24 @@ instance (Classifier weak t cl, Ord cl) =>
             let (cl, score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
 
+-- | Splits the list of tests in two list of tests, for training and testing
+-- following the ratio.
+splitTests :: Rational -> [a] -> ([a], [a]) 
+splitTests ratio ts =
+    splitAt (round $ fromIntegral (length ts) * ratio) ts
+
 -- | Gives the score that the classifier gets on the set of tests. 
 classifierScore :: (Classifier c t cl, TrainingTest t cl, Eq cl)
                 => c -> [t] -> Score
 classifierScore classifier ts =
     let valid = filter (\t -> tClass t == classifier `cClass` t) ts
     in fromIntegral (length valid) / fromIntegral (length ts)
+    
+subStrongClassifiers :: StrongClassifier a -> [StrongClassifier a]
+subStrongClassifiers (StrongClassifier cs) =
+    map  cs
+  where
+    
+
+strongClassifierScores (StrongClassifier cs) =
+    

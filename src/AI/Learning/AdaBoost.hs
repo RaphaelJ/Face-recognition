@@ -3,8 +3,6 @@ module AI.Learning.AdaBoost (
       adaBoost
     ) where
 
-import Debug.Trace
-
 import Data.Function
 import Data.List
 
@@ -47,7 +45,7 @@ selectClassifiers weakSelector tests =
   where
     (c, cScore) = weakSelector tests
     
-    cWeight = traceShow cScore $ 0.5 * (log $ cScore / (1.0 - cScore))
+    cWeight = 0.5 * (log $ cScore / (1.0 - cScore))
 
     -- Reduces the weight of positive tests, increment the weight of negative
     -- tests.
