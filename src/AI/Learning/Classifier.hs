@@ -80,9 +80,8 @@ classifierScore classifier ts =
     
 subStrongClassifiers :: StrongClassifier a -> [StrongClassifier a]
 subStrongClassifiers (StrongClassifier cs) =
-    map  cs
-  where
-    
+    map (StrongClassifier . flip take cs ) [1..length cs]
 
-strongClassifierScores (StrongClassifier cs) =
+-- strongClassifierScores :: StrongClassifier 
+-- strongClassifierScores (StrongClassifier cs) =
     
