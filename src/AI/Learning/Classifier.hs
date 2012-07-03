@@ -9,7 +9,7 @@ module AI.Learning.Classifier (
     -- * Types
     , Weight, Score, StrongClassifier (..)
     -- * Functions
-    , splitTests, classifierScore
+    , splitTests, classifierScore, subStrongClassifiers, strongClassifierScores
     ) where
 
 import Data.Function
@@ -77,11 +77,17 @@ classifierScore :: (Classifier c t cl, TrainingTest t cl, Eq cl)
 classifierScore classifier ts =
     let valid = filter (\t -> tClass t == classifier `cClass` t) ts
     in fromIntegral (length valid) / fromIntegral (length ts)
-    
+
+-- | Lists all sub-'StrongClassifier's possibles with the sub-sequences of 
+-- weak classifiers from the 'StrongClassifier'.
 subStrongClassifiers :: StrongClassifier a -> [StrongClassifier a]
 subStrongClassifiers (StrongClassifier cs) =
-    map (StrongClassifier . flip take cs ) [1..length cs]
+    map (StrongClassifier . flip take cs) [1..length cs]
 
--- strongClassifierScores :: StrongClassifier 
--- strongClassifierScores (StrongClassifier cs) =
-    
+-- | Lists all sub-'StrongClassifier's with their scores.
+strongClassifierScores :: (Classifier a t cl, TrainingTest t cl, Ord cl)
+                       => StrongClassifier a -> [t]
+                       -> [(StrongClassifier a, Score)]
+strongClassifierScores classifier ts =
+    let subs = subStrongClassifiers classifier
+    in map (\c -> (c, classifierScore c ts)) subs

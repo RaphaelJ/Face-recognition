@@ -9,7 +9,7 @@ import Data.Function
 import Data.List
 import System.FilePath (FilePath)
 
-import AI.Learning.AdaBoost (Classifier (..), StrongClassifier, Weight)
+import AI.Learning.Classifier (Classifier (..), StrongClassifier, Weight)
 import Vision.Haar.Classifier (HaarClassifier)
 import Vision.Haar.Window (wRect, windows)
 import qualified Vision.Image as I
