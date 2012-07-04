@@ -15,6 +15,7 @@ import Data.Function
 import Data.Int
 import Data.List
 import Data.Ratio
+import GHC.Conc
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
 import System.Random (mkStdGen, randoms)
@@ -58,9 +59,9 @@ selectHaarClassifier ts =
     -- Compute the best 'DecisionStump' for each feature on the set of tests,
     -- using parallel computing.
     bestClassifiers =
-        let parStrategy = evalTuple2 rseq rseq
-        in map featureStump features `using` parListChunk 4 parStrategy
---      in parMap parStrategy featureStump features 
+        let strategy = evalTuple2 rseq rseq
+        in map featureStump features `using` parListChunk 7000 strategy
+--         in parMap strategy featureStump features 
     
     featureStump f =
         let (stump, score) = trainDecisionStump [

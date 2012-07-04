@@ -15,7 +15,7 @@ import Vision.Haar.Window (Win)
 
 -- | Weak Haar\'s 'Classifier' using a 'HaarFeature' to check an object.
 data HaarClassifier = HaarClassifier {
-      hcFeature :: !HaarFeature, hcStump :: DecisionStump Int64
+      hcFeature :: !HaarFeature, hcStump :: !(DecisionStump Int64)
     } deriving (Show, Read)
 
 -- | The 'HaarClassifier' is able to classify a part of an image using its
