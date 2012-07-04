@@ -65,6 +65,19 @@ instance (Classifier weak t cl, Ord cl) =>
             let (cl, score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
 
+-- -- | Specialized instance for binary classes.
+-- instance (Classifier weak t Bool) =>
+--          Classifier (StrongClassifier weak) t Bool where
+--     StrongClassifier cs `cClassScore` test =
+--         if trueScore > falseScore then (True, trueScore)
+--                                   else (False, falseScore)
+--       where
+--         (trueScore, falseScore) = foldl' step (0, 0) cs
+--         step (ts, fs) (c, w) =
+--             let (valid, score) = c `cClassScore` test
+--             in if valid then (ts + score * w, fs)
+--                         else (ts, fs + score * w)
+
 -- | Splits the list of tests in two list of tests, for training and testing
 -- following the ratio.
 splitTests :: Rational -> [a] -> ([a], [a]) 

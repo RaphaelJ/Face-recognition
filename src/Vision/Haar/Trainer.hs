@@ -47,6 +47,9 @@ instance TrainingTest TrainingImage Bool where
 
 instance Classifier HaarClassifier TrainingImage Bool where
     classifier `cClassScore` image = classifier `cClassScore` tiWindow image
+    
+
+chunksSize = length features `quot` numCapabilities
 
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
@@ -60,8 +63,7 @@ selectHaarClassifier ts =
     -- using parallel computing.
     bestClassifiers =
         let strategy = evalTuple2 rseq rseq
-        in map featureStump features `using` parListChunk 7000 strategy
---         in parMap strategy featureStump features 
+        in map featureStump features `using` parListChunk chunksSize strategy
     
     featureStump f =
         let (stump, score) = trainDecisionStump [
@@ -75,6 +77,7 @@ selectHaarClassifier ts =
 train :: FilePath -> Int -> FilePath -> IO ()
 train directory steps savePath = do
     print $ length features
+    print chunksSize
     putStrLn "Loading images ..."
     good <- loadIntegrals True (directory </> "good")
     putStrLn "\tgood/ loaded"

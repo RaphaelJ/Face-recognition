@@ -1,1 +1,1 @@
-StrongClassifier {scClassifiers = [(HaarClassifier {hcFeature = TwoVertRect (Rect {rX = 3, rY = 12, rWidth = 19, rHeight = 8}), hcStump = DecisionStump {dsThreshold = -4751, dsParity = False}},0.919037145887143)]}
+StrongClassifier {scClassifiers = [(HaarClassifier {hcFeature = ThreeVertRect (Rect {rX = 6, rY = 4, rWidth = 2, rHeight = 18}), hcStump = DecisionStump {dsThreshold = -3, dsParity = False}},0.9489794995983748)]}
