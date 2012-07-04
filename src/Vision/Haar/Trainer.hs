@@ -59,7 +59,8 @@ selectHaarClassifier ts =
     -- using parallel computing.
     bestClassifiers =
         let parStrategy = evalTuple2 rseq rseq
-        in parMap parStrategy featureStump features 
+        in map featureStump features `using` parListChunk 4 parStrategy
+--      in parMap parStrategy featureStump features 
     
     featureStump f =
         let (stump, score) = trainDecisionStump [
@@ -72,6 +73,7 @@ selectHaarClassifier ts =
 -- directories (bad & good).
 train :: FilePath -> Int -> FilePath -> IO ()
 train directory steps savePath = do
+    print $ length features
     putStrLn "Loading images ..."
     good <- loadIntegrals True (directory </> "good")
     putStrLn "\tgood/ loaded"

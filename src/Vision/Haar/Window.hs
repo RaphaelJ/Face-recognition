@@ -78,14 +78,10 @@ Win (Rect winX winY w h) integral _ `getValue` Point x y =
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
 normalizeSum :: Win -> Int -> Int64 -> Int64
-normalizeSum (Win _ _ distribution) n s =
+normalizeSum (Win _ _ distribution) !n !s =
     round $ double n * (normalize $ s `quot` int64 n) * 255
   where
-    normalize p = double p -- distribution ! int p
-    -- Pixel\'s value normalized with the double of the standard derivation
-    -- (95% of pixels values, following a normal distribution), averaged
-    -- around 127.
---     normalize p = (p - (avg - 2*deriv)) * 255 `quot` (4*deriv)
+    normalize p = distribution ! int p
 {-# INLINE normalizeSum #-}
 
 -- | Lists all features positions and sizes inside the default window.
@@ -121,7 +117,7 @@ rectangles minWidth minHeight width height =
         , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 5
+    incrMult = 1
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult

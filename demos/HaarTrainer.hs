@@ -5,7 +5,7 @@ import Vision.Haar.Trainer
 main = do
     args <- getArgs
     case args of
-        [strSteps] -> do
+        [strSteps, out] -> do
             let steps = read strSteps
-            train "../data/learning_faces/" steps "../data/classifier.cl"
-        _       -> putStrLn "Usage: HaarTrainer <steps>"
+            train "../data/learning_faces/" steps out
+        _       -> putStrLn "Usage: HaarTrainer <steps> <out file>"

@@ -61,7 +61,7 @@ trainDecisionStump ts =
             falseScore = 1.0 - trueScore
             c2 = (DecisionStump value False, falseScore)
             
-            trueScore' = trueScore - sum weights
+            trueScore' = trueScore - weights
         in (c1 : c2 : cs, trueScore')
 
     -- Sums the weight of all valid tests.
@@ -72,13 +72,15 @@ trainDecisionStump ts =
     
     score = compare `on` snd
     
--- | Sorts and groups values. Returns each distinct value with a list of 
+-- | Sorts and groups values. Returns each distinct value with the sum of 
 -- weights.
-groupedValues :: Ord a => [(a, Weight)] -> [(a, [Weight])]
-groupedValues =
-    groupByValue . sortBy (compare `on` fst)
+groupedValues :: Ord a => [(a, Weight)] -> [(a, Weight)]
+groupedValues =    
+    sumWeights . sortBy (compare `on` fst)
   where
-    -- Groups the same values in a tuple containing the value and the list of
-    -- weights.
-    groupByValue =
-        map (\((v, w) : xs) -> (v, w : map snd xs)) . groupBy ((==) `on` fst)
+    -- Groups the same values in a tuple containing the value and the sum of 
+    -- weights
+    sumWeights []            = []
+    sumWeights ((x, w) : xs) =
+        let (same, xs') = span ((== x) . fst) xs
+        in (x, w + sum (map snd same)) : sumWeights xs'
