@@ -23,7 +23,7 @@ import System.Random (mkStdGen, randoms)
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
       TrainingTest (..), Classifier (..), Weight, Score, splitTests
-    , classifierScore
+    , classifierScore, StrongClassifier (..)
     )
 import AI.Learning.DecisionStump (
       DecisionStump, DecisionStumpTest (..), trainDecisionStump
@@ -47,7 +47,6 @@ instance TrainingTest TrainingImage Bool where
 
 instance Classifier HaarClassifier TrainingImage Bool where
     classifier `cClassScore` image = classifier `cClassScore` tiWindow image
-    
 
 chunksSize = length features `quot` numCapabilities
 
@@ -85,21 +84,24 @@ train directory steps savePath = do
     putStrLn "\tbad/ loaded"
     let (training, testing) = splitTests (90 % 100) $ unsortList (good ++ bad)
 
-    putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
-    let classifier = adaBoost steps training selectHaarClassifier
-    print classifier
+--     putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
+--     let classifier = adaBoost steps training selectHaarClassifier
+--     print classifier
+
+    StrongClassifier cs <- read `fmap` readFile savePath :: IO (StrongClassifier HaarClassifier)
+    let classifier = StrongClassifier (take 1 cs)
     
     putStrLn $ "Test on " ++ show (length testing) ++ " image(s) ..."
     let score = classifierScore classifier testing
     putStrLn $ "Classifier score is " ++ show (score * 100) ++ "%"
 
-    putStrLn "Save classifier ..."
-    writeFile savePath $ show classifier
+--     putStrLn "Save classifier ..."
+--     writeFile savePath $ show classifier
   where
     loadIntegrals isValid = (trainingImages isValid `fmap`) . loadImages
 
     loadImages dir = do
-        paths <- getDirectoryContents $ dir
+        paths <- sort `fmap` getDirectoryContents dir
         mapM (loadImage . (dir </>)) (excludeHidden paths)
 
     loadImage path = do
@@ -108,8 +110,12 @@ train directory steps savePath = do
 
     excludeHidden = filter $ ((/=) '.') . head
 
-unsortList =
-    map snd . sortBy (compare `on` fst) . zip (randoms $ mkStdGen 1 :: [Int])
+    unsortList =
+        let gen = mkStdGen 1
+        in map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
+        
+score classifier tests = 
+    
 
 -- | Accepts a list of images with a boolean indicating if the image is valid.
 -- Compute the 'IntegralImage' and initialises a full image 'Win' for each
