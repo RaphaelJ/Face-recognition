@@ -21,8 +21,8 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 
 -- | Used as a structure to iterate an image.
 data Win = Win {
-      wRect :: !Rect
-    , wIntegral :: !II.IntegralImage
+      wRect :: {-# UNPACK #-} !Rect
+    , wIntegral :: {-# UNPACK #-} !II.IntegralImage 
     -- | Values ([0;255]) of the commulative normal distribution for each 
     -- pixels values ([0; 255]) based on the average and the standard derivation
     -- of the 'Win' pixels values.
@@ -31,7 +31,7 @@ data Win = Win {
     -- value of the pixel of value @x@ in the equalized distribution:
     -- 
     -- > wDistibution win ! x
-    , wDistibution :: !(UArray Int Double)
+    , wDistibution :: {-# UNPACK #-} !(UArray Int Double)
     }
 
 -- Default window\'s size.
@@ -47,15 +47,15 @@ windowPixels = int64 $ windowWidth * windowWidth
 win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect x y w h) integral squaredIntegral =
     Win rect integral distribution
-    --deriv (round avg)
   where
     avg = valuesSum / n
     sig = max 1 $ sqrt $ (squaresSum / n) - avg^2
     n = double $ w * h
     valuesSum = double $ II.sumRectangle integral rect
     squaresSum = double $ II.sumRectangle squaredIntegral rect
-    -- The normal distribution function
+    -- The normal distribution of the window
     normal x = (1 / (sig * sqrt (2 * pi))) * exp (-(x - avg)^2 / (2 * sig^2))
+    -- The accumulative function of the normal distribution
     distribution =
         listArray (0, 255) $ tail $ scanl (\acc x -> acc + normal x) 0 [0..255]
 
@@ -78,7 +78,7 @@ Win (Rect winX winY w h) integral _ `getValue` Point x y =
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
 normalizeSum :: Win -> Int -> Int64 -> Int64
-normalizeSum (Win _ _ distribution) !n !s =
+normalizeSum (Win _ _ distribution) n s =
     round $ double n * (normalize $ s `quot` int64 n) * 255
   where
     normalize p = distribution ! int p
@@ -117,7 +117,7 @@ rectangles minWidth minHeight width height =
         , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 2
+    incrMult = 3
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult

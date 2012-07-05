@@ -89,17 +89,14 @@ train directory steps savePath = do
     putStrLn "\tbad/ loaded"
     let (training, testing) = splitTests (90 % 100) $ unsortList (good ++ bad)
 
---     putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
---     let classifier = adaBoost steps training selectHaarClassifier
---     print classifier
-
-    classifier <- read `fmap` readFile savePath :: IO (StrongClassifier HaarClassifier)
-    
+    putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
+    let classifier = adaBoost steps training selectHaarClassifier
+    print classifier
 
     classifierStats classifier testing
     
---     putStrLn "Save classifier ..."
---     writeFile savePath $ show classifier
+    putStrLn "Save classifier ..."
+    writeFile savePath $ show classifier
   where
     loadIntegrals isValid = (trainingImages isValid `fmap`) . loadImages
 
@@ -124,8 +121,9 @@ classifierStats classifier tests = do
     putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
     
     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
-    putStrLn "Sub classifiers score by length:"
-    forM_ cs $ \(StrongClassifier ws, score) -> do
+    let !cs' = cs `using` parList (evalTuple2 rseq rseq)
+    putStrLn "Sub classifiers length by score:"
+    forM_ cs' $ \(StrongClassifier ws, score) -> do
         putStrLn $ show (length ws) ++ "\t: " ++ show (score * 100) ++ "%"
         
     let score = classifierScore classifier tests
