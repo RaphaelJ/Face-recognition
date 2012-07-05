@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -33,7 +34,7 @@ class Classifier c t cl | c t -> cl where
     -- with @1@ for sure, @0@ for unlikely).
     cClassScore :: c -> t -> (cl, Score)
 
-    classifier `cClass` test = fst $ classifier `cClassScore` test
+    cClass classifier = fst . (classifier `cClassScore`)
     {-# INLINE cClass #-}
 
 -- | Represents an instance of a testable item (entry, image ...) used during
@@ -43,19 +44,55 @@ class TrainingTest t cl | t -> cl where
     -- | Gives the class identifier of the test.
     tClass :: t -> cl
 
--- | A 'StrongClassifier' is a trained container with a set of 
--- weak classifiers.
+-- | A 'StrongClassifier' is a trained container with a set of weak classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
 data StrongClassifier a = StrongClassifier {
       scClassifiers :: [(a, Weight)] -- ^ Weak classifiers with weight
     } deriving (Show, Read)
     
+-- | Represents all the classes usable for the 'StrongClassifier'.
+-- Each instance must be able to classify an item using 'StrongClassifier' 
+-- with an unspecified 'Classifier' type.
+-- 
+-- Minimal complete definition: 'scClassScore'.
+class StrongClassifierClass cl where
+    scClassScore :: Classifier weak t cl
+                 => StrongClassifier weak -> t -> (cl, Score)
+
+    scClass :: Classifier weak t cl
+            => StrongClassifier weak -> t -> cl
+    
+    scClass classifier = fst . (classifier `scClassScore`)
+    {-# INLINE scClass #-}
+    
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
--- weak classifier type is itself an instance of 'Classifier'.
+-- weak classifier type is itself an instance of 'Classifier' and the class
+-- is an instance of 'StrongClassifierClass'.
 -- The 'StrongClassifier' will give the class with the strongest score.
-instance (Classifier weak t cl, Ord cl) =>
+instance (Classifier weak t cl, StrongClassifierClass cl) =>
          Classifier (StrongClassifier weak) t cl where
-    StrongClassifier cs `cClassScore` test =
+    cClassScore = scClassScore
+    {-# INLINE cClassScore #-}
+    
+    cClass = scClass
+    {-# INLINE cClass #-}
+
+-- | Instance for binary classes.
+instance StrongClassifierClass Bool where
+    StrongClassifier cs `scClassScore` test =
+        if trueScore > falseScore then (True, trueScore)
+                                  else (False, falseScore)
+      where
+        (trueScore, falseScore) = foldl' step (0, 0) cs
+        step (ts, fs) (c, w) =
+            let (valid, score) = c `cClassScore` test
+            in if valid then (ts + score * w, fs)
+                        else (ts, fs + score * w)
+    {-# INLINE scClassScore #-}
+
+-- | Instance for classes with more than two states.
+instance StrongClassifierClass Int where
+    StrongClassifier cs `scClassScore` test =
         maximumBy (compare `on` snd) classesScores
       where
         -- Uses a 'Map' to sum weights by classes.
@@ -64,19 +101,7 @@ instance (Classifier weak t cl, Ord cl) =>
         step acc (c, w) =
             let (cl, score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
-
--- -- | Specialized instance for binary classes.
--- instance (Classifier weak t Bool) =>
---          Classifier (StrongClassifier weak) t Bool where
---     StrongClassifier cs `cClassScore` test =
---         if trueScore > falseScore then (True, trueScore)
---                                   else (False, falseScore)
---       where
---         (trueScore, falseScore) = foldl' step (0, 0) cs
---         step (ts, fs) (c, w) =
---             let (valid, score) = c `cClassScore` test
---             in if valid then (ts + score * w, fs)
---                         else (ts, fs + score * w)
+    {-# INLINE scClassScore #-}
 
 -- | Splits the list of tests in two list of tests, for training and testing
 -- following the ratio.
@@ -98,9 +123,9 @@ subStrongClassifiers (StrongClassifier cs) =
     map (StrongClassifier . flip take cs) [1..length cs]
 
 -- | Lists all sub-'StrongClassifier's with their scores.
-strongClassifierScores :: (Classifier a t cl, TrainingTest t cl, Ord cl)
-                       => StrongClassifier a -> [t]
-                       -> [(StrongClassifier a, Score)]
+strongClassifierScores
+    :: (Classifier (StrongClassifier a) t cl, TrainingTest t cl, Eq cl)
+    => StrongClassifier a -> [t] -> [(StrongClassifier a, Score)]
 strongClassifierScores classifier ts =
     let subs = subStrongClassifiers classifier
     in map (\c -> (c, classifierScore c ts)) subs

@@ -10,6 +10,7 @@ module Vision.Haar.Trainer (
     , train
     ) where
 
+import Control.Monad
 import Control.Parallel.Strategies
 import Data.Function
 import Data.Int
@@ -22,15 +23,15 @@ import System.Random (mkStdGen, randoms)
 
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
-      TrainingTest (..), Classifier (..), Weight, Score, splitTests
-    , classifierScore, StrongClassifier (..)
+      TrainingTest (..), Classifier (..), StrongClassifier (..), Weight, Score
+    , splitTests, classifierScore, strongClassifierScores
     )
 import AI.Learning.DecisionStump (
       DecisionStump, DecisionStumpTest (..), trainDecisionStump
     )
 
 import Vision.Haar.Classifier (HaarClassifier (..))
-import Vision.Haar.Feature (HaarFeature, features, compute)
+import Vision.Haar.Feature (features, compute)
 import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
 import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
@@ -48,6 +49,8 @@ instance TrainingTest TrainingImage Bool where
 instance Classifier HaarClassifier TrainingImage Bool where
     classifier `cClassScore` image = classifier `cClassScore` tiWindow image
 
+-- | Defines how the features list must be divided so only a chunk is running
+-- on each core when training with parallel computing.
 chunksSize = length features `quot` numCapabilities
 
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
@@ -62,6 +65,8 @@ selectHaarClassifier ts =
     -- using parallel computing.
     bestClassifiers =
         let strategy = evalTuple2 rseq rseq
+           -- parMap will cause a space leak because each feature will be
+           -- evaluated at the same time.
         in map featureStump features `using` parListChunk chunksSize strategy
     
     featureStump f =
@@ -88,13 +93,11 @@ train directory steps savePath = do
 --     let classifier = adaBoost steps training selectHaarClassifier
 --     print classifier
 
-    StrongClassifier cs <- read `fmap` readFile savePath :: IO (StrongClassifier HaarClassifier)
-    let classifier = StrongClassifier (take 1 cs)
+    classifier <- read `fmap` readFile savePath :: IO (StrongClassifier HaarClassifier)
     
-    putStrLn $ "Test on " ++ show (length testing) ++ " image(s) ..."
-    let score = classifierScore classifier testing
-    putStrLn $ "Classifier score is " ++ show (score * 100) ++ "%"
 
+    classifierStats classifier testing
+    
 --     putStrLn "Save classifier ..."
 --     writeFile savePath $ show classifier
   where
@@ -114,8 +117,19 @@ train directory steps savePath = do
         let gen = mkStdGen 1
         in map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
         
-score classifier tests = 
+-- | Prints the statistics of the sub classifier of the Haar\'s cascade on a set
+-- of tests.
+classifierStats :: StrongClassifier HaarClassifier -> [TrainingImage] -> IO ()
+classifierStats classifier tests = do
+    putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
     
+    let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
+    putStrLn "Sub classifiers score by length:"
+    forM_ cs $ \(StrongClassifier ws, score) -> do
+        putStrLn $ show (length ws) ++ "\t: " ++ show (score * 100) ++ "%"
+        
+    let score = classifierScore classifier tests
+    putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"
 
 -- | Accepts a list of images with a boolean indicating if the image is valid.
 -- Compute the 'IntegralImage' and initialises a full image 'Win' for each
