@@ -11,11 +11,10 @@ main = do
         [classifierPath, imagePath, outPath] -> do
             i <- I.load imagePath :: IO G.GreyImage
             c <- loadClassifier classifierPath
-            let rs = take 1 $ map fst $ detect c i
+            let rs = map fst $ detect c i
             I.save outPath $ drawRectangles i rs
             
             print rs
-            print $ length rs
         _ ->
             putStrLn "Usage: HaarDetector <classifier> <image> <output>"
 

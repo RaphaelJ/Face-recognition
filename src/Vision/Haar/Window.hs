@@ -81,7 +81,10 @@ normalizeSum :: Win -> Int -> Int64 -> Int64
 normalizeSum (Win _ _ distribution) n s =
     round $ double n * (normalize $ s `quot` int64 n) * 255
   where
-    normalize p = distribution ! int p
+    normalize p = 
+        if p > 255 then traceShow p (distribution ! 255)
+                   else if p < 0 then traceShow p (distribution ! 0)
+                                 else distribution ! int p
 {-# INLINE normalizeSum #-}
 
 -- | Lists all features positions and sizes inside the default window.
@@ -103,7 +106,7 @@ windows integral squaredIntegral =
     Size iWidth iHeight = I.getSize integral
     (width, height) = (iWidth - 1, iHeight - 1)
     maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
-    incrMult = 1
+    incrMult = 4
     incrX = 1 * incrMult
     incrY = 1 * incrMult
 
@@ -117,7 +120,7 @@ rectangles minWidth minHeight width height =
         , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 3
+    incrMult = 5
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult
