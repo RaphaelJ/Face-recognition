@@ -117,7 +117,7 @@ rectangles minWidth minHeight width height =
         , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 5
+    incrMult = 2
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult
