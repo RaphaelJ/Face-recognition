@@ -71,8 +71,8 @@ selectHaarClassifier ts =
     
     featureStump f =
         let (stump, score) = trainDecisionStump [
-                  (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w) | 
-                  (t, w) <- ts
+                  (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w)
+                | (t, w) <- ts
                 ]
         in (HaarClassifier f stump, score)
 

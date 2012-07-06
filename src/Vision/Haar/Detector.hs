@@ -5,17 +5,18 @@ module Vision.Haar.Detector (
     , loadClassifier
     ) where
 
+import Control.Parallel.Strategies
 import Data.Function
 import Data.List
 import System.FilePath (FilePath)
 
-import AI.Learning.Classifier (Classifier (..), StrongClassifier, Weight)
+import AI.Learning.Classifier (Classifier (..), StrongClassifier (..), Weight)
 import Vision.Haar.Classifier (HaarClassifier)
-import Vision.Haar.Window (wRect, windows)
+import Vision.Haar.Window (wRect, windows, Win (..))
 import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
 import qualified Vision.Image.IntegralImage as II
-import Vision.Primitive (Rect)
+import Vision.Primitive (Rect (..))
 
 -- | Detects all positive matchs inside the image using a strong
 -- 'HaarClassifier'.
@@ -23,6 +24,9 @@ detect :: StrongClassifier HaarClassifier -> G.GreyImage -> [(Rect, Weight)]
 detect classifier image =
     let integral = II.integralImage image id
         squaredIintegral = II.integralImage image (^2)
+--         wins = windows integral squaredIintegral
+--         w = last $ wins
+--         valids = [(wRect w, fromIntegral $ sum [x | Win (Rect _ _ _ x) _ _ <- wins])] 
         valids = [ (r, s) | w <- windows integral squaredIintegral
             , let r = wRect w, let (v, s) = classifier `cClassScore` w, v
             ]

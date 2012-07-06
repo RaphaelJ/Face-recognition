@@ -14,11 +14,11 @@ import Data.Int
 import qualified Vision.Haar.Window as W
 import Vision.Primitive (Point (..), Rect (..))
 
-data HaarFeature = TwoVertRect Rect
-                 | TwoHorizRect Rect
-                 | ThreeVertRect Rect
-                 | ThreeHorizRect Rect
-                 | FourRect Rect
+data HaarFeature = TwoVertRect !Rect
+                 | TwoHorizRect !Rect
+                 | ThreeVertRect !Rect
+                 | ThreeHorizRect !Rect
+                 | FourRect !Rect
     deriving (Show, Read, Eq)
 
 compute :: HaarFeature -> W.Win -> Int64
@@ -40,8 +40,8 @@ compute r@(TwoVertRect (Rect x y w h)) win =
         e = win `W.getValue` Point x (y+h)
         f = win `W.getValue` Point (x+w) (y+h)
         n = w * h `quot` 2
-        s1 = W.normalizeSum win n $ d + a - b - c
-        s2 = W.normalizeSum win n $ f + c - d - e
+        !s1 = W.normalizeSum win n $ d + a - b - c
+        !s2 = W.normalizeSum win n $ f + c - d - e
     in s2 - s1
     
 compute (TwoHorizRect (Rect x y w h)) win =
@@ -58,8 +58,8 @@ compute (TwoHorizRect (Rect x y w h)) win =
         e = win `W.getValue` Point (x+w') (y+h)
         f = win `W.getValue` Point (x+w) (y+h)
         n = w * h `quot` 2
-        s1 = W.normalizeSum win n $ e + a - b - d
-        s2 = W.normalizeSum win n $ f + b - c - e
+        !s1 = W.normalizeSum win n $ e + a - b - d
+        !s2 = W.normalizeSum win n $ f + b - c - e
     in s2 - s1
 
 compute (ThreeVertRect (Rect x y w h)) win =
@@ -75,7 +75,7 @@ compute (ThreeVertRect (Rect x y w h)) win =
     -- -         -
     -- -   S3    -
     -- -         -
-    -- g ------- h''
+    -- g ------- i
     let h' = h `quot` 3
         a = win `W.getValue` Point x y
         b = win `W.getValue` Point (x+w) y
@@ -84,11 +84,11 @@ compute (ThreeVertRect (Rect x y w h)) win =
         e = win `W.getValue` Point x (y+h'+h')
         f = win `W.getValue` Point (x+w) (y+h'+h')
         g = win `W.getValue` Point x (y+h)
-        h'' = win `W.getValue` Point (x+w) (y+h)
+        i = win `W.getValue` Point (x+w) (y+h)
         n = w * h * 2 `quot` 3
-        s1 = W.normalizeSum win n $ d + a - b - c
-        s2 = W.normalizeSum win n $ f + c - d - e
-        s3 = W.normalizeSum win n $ h'' + e - f - g
+        !s1 = W.normalizeSum win n $ d + a - b - c
+        !s2 = W.normalizeSum win n $ f + c - d - e
+        !s3 = W.normalizeSum win n $ i + e - f - g
     in s1 + s3 - s2
         
 compute (ThreeHorizRect (Rect x y w h)) win =
@@ -105,11 +105,11 @@ compute (ThreeHorizRect (Rect x y w h)) win =
         e = win `W.getValue` Point x (y+h)
         f = win `W.getValue` Point (x+w') (y+h)
         g = win `W.getValue` Point (x+w'+w') (y+h)
-        h'' = win `W.getValue` Point (x+w) (y+h)
+        i = win `W.getValue` Point (x+w) (y+h)
         n = w * h * 2 `quot` 3
-        s1 = W.normalizeSum win n $ f + a - b - e
-        s2 = W.normalizeSum win n $ g + b - c - f
-        s3 = W.normalizeSum win n $ h'' + c - d - g
+        !s1 = W.normalizeSum win n $ f + a - b - e
+        !s2 = W.normalizeSum win n $ g + b - c - f
+        !s3 = W.normalizeSum win n $ i + c - d - g
     in s1 + s3 - s2
     
 compute (FourRect (Rect x y w h)) win =
@@ -121,7 +121,7 @@ compute (FourRect (Rect x y w h)) win =
     -- -         -         -
     -- -   S3    -    S4   -
     -- -         -         -
-    -- g ------ h'' ------ i
+    -- g ------- i ------- j
     let w' = w `quot` 2
         h' = h `quot` 2
         a = win `W.getValue` Point x y
@@ -131,13 +131,13 @@ compute (FourRect (Rect x y w h)) win =
         e = win `W.getValue` Point (x+w') (y+h')
         f = win `W.getValue` Point (x+w) (y+h')
         g = win `W.getValue` Point x (y+h)
-        h'' = win `W.getValue` Point (x+w') (y+h)
-        i = win `W.getValue` Point (x+w) (y+h)
+        i = win `W.getValue` Point (x+w') (y+h)
+        j = win `W.getValue` Point (x+w) (y+h)
         n = w * h * 2 `quot` 4
-        s1 = W.normalizeSum win n $ e + a - b - d
-        s2 = W.normalizeSum win n $ f + b - c - e
-        s3 = W.normalizeSum win n $ h'' + d - e - g
-        s4 = W.normalizeSum win n $ i + e - f - h''
+        !s1 = W.normalizeSum win n $ e + a - b - d
+        !s2 = W.normalizeSum win n $ f + b - c - e
+        !s3 = W.normalizeSum win n $ i + d - e - g
+        !s4 = W.normalizeSum win n $ j + e - f - i
     in s1 + s4 - s2 - s3
 {-# INLINE compute #-}
 

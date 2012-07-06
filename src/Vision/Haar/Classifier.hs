@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Vision.Haar.Classifier (
@@ -22,6 +23,6 @@ data HaarClassifier = HaarClassifier {
 -- iteration window.
 instance Classifier HaarClassifier Win Bool where
     HaarClassifier feature stump `cClassScore` window =
-        let value = compute feature window
+        let !value = feature `compute` window
         in stump `cClassScore` value
     {-# INLINE cClassScore #-}

@@ -47,7 +47,8 @@ class TrainingTest t cl | t -> cl where
 -- | A 'StrongClassifier' is a trained container with a set of weak classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
 data StrongClassifier a = StrongClassifier {
-      scClassifiers :: [(a, Weight)] -- ^ Weak classifiers with weight
+      scClassifiers :: ![(a, Weight)] -- ^ Weak classifiers with weight
+    , scTotalWeights :: !Weight
     } deriving (Show, Read)
     
 -- | Represents all the classes usable for the 'StrongClassifier'.
@@ -79,9 +80,9 @@ instance (Classifier weak t cl, StrongClassifierClass cl) =>
 
 -- | Instance for binary classes.
 instance StrongClassifierClass Bool where
-    StrongClassifier cs `scClassScore` test =
-        if trueScore > falseScore then (True, trueScore)
-                                  else (False, falseScore)
+    StrongClassifier cs weights `scClassScore` test =
+        if trueScore > falseScore then (True, trueScore / weights)
+                                  else (False, falseScore / weights)
       where
         (trueScore, falseScore) = foldl' step (0, 0) cs
         step (ts, fs) (c, w) =
@@ -92,9 +93,10 @@ instance StrongClassifierClass Bool where
 
 -- | Instance for classes with more than two states.
 instance StrongClassifierClass Int where
-    StrongClassifier cs `scClassScore` test =
-        maximumBy (compare `on` snd) classesScores
+    StrongClassifier cs weights `scClassScore` test =
+        (cl, score / weights)
       where
+        (cl, score) = maximumBy (compare `on` snd) classesScores
         -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes with score.
         classesScores = M.toList $ foldl' step M.empty cs
@@ -119,8 +121,10 @@ classifierScore classifier ts =
 -- | Lists all sub-'StrongClassifier's possibles with the sub-sequences of 
 -- weak classifiers from the 'StrongClassifier'.
 subStrongClassifiers :: StrongClassifier a -> [StrongClassifier a]
-subStrongClassifiers (StrongClassifier cs) =
-    map (StrongClassifier . flip take cs) [1..length cs]
+subStrongClassifiers (StrongClassifier cs ws) = [ StrongClassifier cs' ws 
+    | n <- [1..length cs]
+    , let cs' = take n cs, let ws = sum (map snd cs)
+    ]
 
 -- | Lists all sub-'StrongClassifier's with their scores.
 strongClassifierScores

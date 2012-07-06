@@ -36,7 +36,7 @@ data Size = Size {
 
 data Rect = Rect {
       rX :: {-# UNPACK #-} !Int, rY :: {-# UNPACK #-} !Int
-    , rWidth :: {-# UNPACK #-} !Int, rHeight :: {-# UNPACK #-}  !Int
+    , rWidth :: {-# UNPACK #-} !Int, rHeight :: {-# UNPACK #-} !Int
     } deriving (Show, Read, Eq)
     
 -- | Returns the bounds of coordinates of a rectangle of the given size.
