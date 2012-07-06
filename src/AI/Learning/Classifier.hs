@@ -80,14 +80,15 @@ instance (Classifier weak t cl, StrongClassifierClass cl) =>
 -- | Instance for binary classes.
 instance StrongClassifierClass Bool where
     StrongClassifier cs `scClassScore` test =
-        if trueScore > falseScore then (True, trueScore)
-                                  else (False, falseScore)
+        if trueScore > falseScore then (True, trueScore / weights)
+                                  else (False, falseScore / weights)
       where
         (trueScore, falseScore) = foldl' step (0, 0) cs
         step (ts, fs) (c, w) =
             let (valid, score) = c `cClassScore` test
             in if valid then (ts + score * w, fs)
                         else (ts, fs + score * w)
+        weights = sum [ w | (_, w) <- cs ]
     {-# INLINE scClassScore #-}
 
 -- | Instance for classes with more than two states.

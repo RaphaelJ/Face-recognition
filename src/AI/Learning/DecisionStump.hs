@@ -17,7 +17,8 @@ import AI.Learning.Classifier (
 
 data DecisionStump a = DecisionStump {
       dsThreshold :: !a
-    , dsParity :: !Bool -- ^ True: higher/equal than threshold, False: lower.
+    , dsParity :: !Bool
+    -- ^ True: higher/equal than threshold, False: lower.
     } deriving (Show, Read, Eq)
     
 data DecisionStumpTest a = DecisionStumpTest {

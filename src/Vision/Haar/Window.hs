@@ -14,6 +14,7 @@ import Debug.Trace
 import Data.Array.Unboxed (UArray, listArray, (!))
 import Data.Int
 import Data.Word
+import Data.Ratio
 
 import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
@@ -53,8 +54,9 @@ win rect@(Rect x y w h) integral squaredIntegral =
     n = double $ w * h
     valuesSum = double $ II.sumRectangle integral rect
     squaresSum = double $ II.sumRectangle squaredIntegral rect
+    sqrt2Pi = sqrt (2 * pi)
     -- The normal distribution of the window
-    normal x = (1 / (sig * sqrt (2 * pi))) * exp (-(x - avg)^2 / (2 * sig^2))
+    normal x = (1 / (sig * sqrt2Pi)) * exp (-(x - avg)^2 / (2 * sig^2))
     -- The accumulative function of the normal distribution
     distribution =
         listArray (0, 255) $ tail $ scanl (\acc x -> acc + normal x) 0 [0..255]
@@ -71,7 +73,7 @@ Win (Rect winX winY w h) integral _ `getValue` Point x y =
     destY = winY + (y * h `quot` windowHeight)
     n = int64 $ w * h
     -- Sum with the window\'s size ratio
-    ratio v = v * windowPixels `quot` n
+    ratio v = (v * windowPixels) `quot` n
 {-# INLINE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
@@ -95,32 +97,39 @@ featuresPos minWidth minHeight =
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
-    [ win (Rect x y w h) integral squaredIntegral |
-          size <- [1..maxSize]
-        , let w = size * windowWidth
-        , let h = size * windowHeight
-        , x <- [0,incrX..width-w]
-        , y <- [0,incrY..height-h]
+    [ win (Rect x y w h) integral squaredIntegral
+    | size <- sizes
+    , let w = round $ size * fromIntegral windowWidth
+    , let h = round $ size * fromIntegral windowHeight
+    , let incrX' = round $ size * incrX
+    , let incrY' = round $ size * incrY
+    , x <- [0,incrX'..width-w]
+    , y <- [0,incrY'..height-h]
     ]
   where
+    sizeIncr = 125 % 100
+    incrX = 4
+    incrY = 4
+    maxPyramDeep = 15
     Size iWidth iHeight = I.getSize integral
     (width, height) = (iWidth - 1, iHeight - 1)
     maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
-    incrMult = 4
-    incrX = 1 * incrMult
-    incrY = 1 * incrMult
+    minWidth = (width % maxPyramDeep) / fromIntegral windowWidth
+    minHeight = (height % maxPyramDeep) / fromIntegral windowHeight
+    minSize = max 1 (max minWidth minHeight)
+    sizes = takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) minSize
 
 -- | Lists all rectangle positions and sizes inside a rectangle of
 -- width * height.
 rectangles minWidth minHeight width height =
-    [ Rect x y w h |
-          x <- [0,incrX..width-minWidth]
-        , y <- [0,incrY..height-minHeight]
-        , w <- [minWidth,minWidth+incrWidth..width-x]
-        , h <- [minHeight,minHeight+incrHeight..height-y]
+    [ Rect x y w h 
+    | x <- [0,incrX..width-minWidth]
+    , y <- [0,incrY..height-minHeight]
+    , w <- [minWidth,minWidth+incrWidth..width-x]
+    , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 5
+    incrMult = 3
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult

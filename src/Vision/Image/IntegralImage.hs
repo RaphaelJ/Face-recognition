@@ -9,7 +9,9 @@ module Vision.Image.IntegralImage (
 
 import Debug.Trace
 
-import Data.Array (Array, (!), array, listArray, bounds, elems)
+import Data.Array.IArray ((!), array, listArray, bounds, elems)
+import Data.Array (Array)
+import Data.Array.Unboxed (UArray)
 import qualified Data.Array.Repa as R
 import Data.Int
 
@@ -17,15 +19,18 @@ import qualified Vision.Image.IImage as I
 import qualified Vision.Image.GreyImage as G
 import Vision.Primitive (Point (..), Size (..), Rect (..))
 
-newtype IntegralImage = IntegralImage (Array (Int, Int) Int64)
+newtype IntegralImage = IntegralImage (UArray (Int, Int) Int64)
     deriving (Show, Eq)
 type IIPixel = Int64
 
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
 integralImage :: G.GreyImage -> (Int64 -> Int64) -> IntegralImage
 integralImage image f =
-    IntegralImage $ integral
+    IntegralImage $ uintegral
   where
+    uintegral = listArray (bounds integral) (elems integral)
+      
+    integral :: Array (Int, Int) Int64
     integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
 
     -- Initializes the first row and the first column to zero
