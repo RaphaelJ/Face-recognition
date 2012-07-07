@@ -19,7 +19,6 @@ import Data.Ratio
 import GHC.Conc
 import System.Directory (getDirectoryContents)
 import System.FilePath (FilePath, (</>))
-import System.Random (mkStdGen, randoms)
 
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
@@ -87,7 +86,7 @@ train directory steps savePath = do
     putStrLn "\tgood/ loaded"
     bad <- loadIntegrals False (directory </> "bad")
     putStrLn "\tbad/ loaded"
-    let (training, testing) = splitTests (90 % 100) $ unsortList (good ++ bad)
+    let (training, testing) = splitTests (90 % 100) (good ++ bad)
 
     putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
     let classifier = adaBoost steps training selectHaarClassifier
@@ -109,10 +108,6 @@ train directory steps savePath = do
         return $ I.resize img $ Size windowWidth windowHeight
 
     excludeHidden = filter $ ((/=) '.') . head
-
-    unsortList =
-        let gen = mkStdGen 1
-        in map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
         
 -- | Prints the statistics of the sub classifier of the Haar\'s cascade on a set
 -- of tests.
@@ -123,8 +118,8 @@ classifierStats classifier tests = do
     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
     let !cs' = cs `using` parList (evalTuple2 rseq rseq)
     putStrLn "Sub classifiers length by score:"
-    forM_ cs' $ \(StrongClassifier ws, score) -> do
-        putStrLn $ show (length ws) ++ "\t: " ++ show (score * 100) ++ "%"
+    forM_ cs' $ \(StrongClassifier wcs ws, score) -> do
+        putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
         
     let score = classifierScore classifier tests
     putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"

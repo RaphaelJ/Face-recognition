@@ -22,7 +22,7 @@ adaBoost :: (Classifier c t cl, TrainingTest t cl, Ord cl, Show cl)
          -> ([(t, Weight)] -> (c, Score))
          -> StrongClassifier c
 adaBoost steps initTests weakSelector =
-    StrongClassifier $ take steps $ selectClassifiers weakSelector initTests'
+    StrongClassifier cs (sum $ map snd cs)
   where
     -- Sets an initial weight for each test.
     -- Test's weight = 100% / n classes / n tests for this class.
@@ -38,6 +38,8 @@ adaBoost steps initTests weakSelector =
 
     tClassEq = (==) `on` tClass
     tClassCompare = compare `on` tClass
+    
+    cs = take steps $ selectClassifiers weakSelector initTests'
 
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers weakSelector tests =

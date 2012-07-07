@@ -68,12 +68,16 @@ getValue :: Win -> Point -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
     ratio $ integral `I.getPixel` Point destX destY
   where
-    -- New coordinates with the window's ratio
-    destX = winX + (x * w `quot` windowWidth)
-    destY = winY + (y * h `quot` windowHeight)
-    n = int64 $ w * h
+    -- New coordinates with the window\'s ratio
+    destX = winX + ((x * w) `quot` windowWidth)
+    destY = winY + ((y * h) `quot` windowHeight)
+    standardX = ((winX * windowWidth) `quot` w) + x
+    standardY = ((winY * windowHeight) `quot` h) + y
+    n = int64 $ destX * destY
+    standardN = int64 $ standardX * standardY
     -- Sum with the window\'s size ratio
-    ratio v = (v * windowPixels) `quot` n
+    ratio v = 
+        v * int64 windowWidth * int64 windowHeight `quot` int64 w `quot` int64 h
 {-# INLINE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
@@ -84,8 +88,8 @@ normalizeSum (Win _ _ distribution) n s =
     round $ double n * (normalize $ s `quot` int64 n) * 255
   where
     normalize p = 
-        if p > 255 then {-traceShow p-} (distribution ! 255)
-                   else if p < 0 then {-traceShow p-} (distribution ! 0)
+        if p > 255 then traceShow p (distribution ! 255)
+                   else if p < 0 then traceShow p (distribution ! 0)
                                  else distribution ! int p
 {-# INLINE normalizeSum #-}
 
@@ -98,7 +102,7 @@ featuresPos minWidth minHeight =
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral =
     [ win (Rect x y w h) integral squaredIntegral
-    | size <- sizes
+    | size <- traceShow (head sizes) sizes
     , let w = round $ size * fromIntegral windowWidth
     , let h = round $ size * fromIntegral windowHeight
     , let incrX' = round $ size * incrX
@@ -107,9 +111,9 @@ windows integral squaredIntegral =
     , y <- [0,incrY'..height-h]
     ]
   where
-    sizeIncr = 115 % 100
-    incrX = 1
-    incrY = 1
+    sizeIncr = 125 % 100
+    incrX = 2
+    incrY = 2
     maxPyramDeep = 20
     Size iWidth iHeight = I.getSize integral
     (width, height) = (iWidth - 1, iHeight - 1)
@@ -119,7 +123,7 @@ windows integral squaredIntegral =
     minSize = max 1 (max minWidth minHeight)
     sizes = takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) minSize
 
--- | Lists all rectangle positions and sizes inside a rectangle of
+-- | Lists all rectangles positions and sizes inside a rectangle of
 -- width * height.
 rectangles minWidth minHeight width height =
     [ Rect x y w h 
@@ -129,7 +133,7 @@ rectangles minWidth minHeight width height =
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 3
+    incrMult = 1
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult

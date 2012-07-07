@@ -16,6 +16,7 @@ module AI.Learning.Classifier (
 import Data.Function
 import Data.List
 import qualified Data.Map as M
+import System.Random (mkStdGen, randoms)
 
 -- | Weight between 0 and 1 of classifiers and tests.
 type Weight = Double
@@ -106,10 +107,14 @@ instance StrongClassifierClass Int where
     {-# INLINE scClassScore #-}
 
 -- | Splits the list of tests in two list of tests, for training and testing
--- following the ratio.
+-- following the ratio. Unsort the list of test before the separation.
 splitTests :: Rational -> [a] -> ([a], [a]) 
 splitTests ratio ts =
-    splitAt (round $ fromIntegral (length ts) * ratio) ts
+    splitAt (round $ fromIntegral (length ts) * ratio) (unsortList ts)
+  where
+    gen = mkStdGen 1
+    unsortList =
+        map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
 
 -- | Gives the score that the classifier gets on the set of tests. 
 classifierScore :: (Classifier c t cl, TrainingTest t cl, Eq cl)
