@@ -39,7 +39,7 @@ compute r@(TwoVertRect (Rect x y w h)) win =
         d = win `W.getValue` Point (x+w) (y+h')
         e = win `W.getValue` Point x (y+h)
         f = win `W.getValue` Point (x+w) (y+h)
-        n = w * h `quot` 2
+        n = w * h'
         !s1 = W.normalizeSum win n $ d + a - b - c
         !s2 = W.normalizeSum win n $ f + c - d - e
     in s2 - s1
@@ -57,7 +57,7 @@ compute (TwoHorizRect (Rect x y w h)) win =
         d = win `W.getValue` Point x (y+h)
         e = win `W.getValue` Point (x+w') (y+h)
         f = win `W.getValue` Point (x+w) (y+h)
-        n = w * h `quot` 2
+        n = w' * h
         !s1 = W.normalizeSum win n $ e + a - b - d
         !s2 = W.normalizeSum win n $ f + b - c - e
     in s2 - s1
@@ -85,7 +85,7 @@ compute (ThreeVertRect (Rect x y w h)) win =
         f = win `W.getValue` Point (x+w) (y+h'+h')
         g = win `W.getValue` Point x (y+h)
         i = win `W.getValue` Point (x+w) (y+h)
-        n = w * h * 2 `quot` 3
+        n = w * h'
         !s1 = W.normalizeSum win n $ d + a - b - c
         !s2 = W.normalizeSum win n $ f + c - d - e
         !s3 = W.normalizeSum win n $ i + e - f - g
@@ -96,7 +96,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
     -- -         -         -         -
     -- -   S1    -   S2    -   S3    -
     -- -         -         -         -
-    -- e ------- f ------- g ------- h''
+    -- e ------- f ------- g ------- i
     let w' = w `quot` 3
         a = win `W.getValue` Point x y
         b = win `W.getValue` Point (x+w') y
@@ -106,7 +106,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
         f = win `W.getValue` Point (x+w') (y+h)
         g = win `W.getValue` Point (x+w'+w') (y+h)
         i = win `W.getValue` Point (x+w) (y+h)
-        n = w * h * 2 `quot` 3
+        n = w' * h
         !s1 = W.normalizeSum win n $ f + a - b - e
         !s2 = W.normalizeSum win n $ g + b - c - f
         !s3 = W.normalizeSum win n $ i + c - d - g
@@ -133,13 +133,13 @@ compute (FourRect (Rect x y w h)) win =
         g = win `W.getValue` Point x (y+h)
         i = win `W.getValue` Point (x+w') (y+h)
         j = win `W.getValue` Point (x+w) (y+h)
-        n = w * h * 2 `quot` 4
+        n = w' * h'
         !s1 = W.normalizeSum win n $ e + a - b - d
         !s2 = W.normalizeSum win n $ f + b - c - e
         !s3 = W.normalizeSum win n $ i + d - e - g
         !s4 = W.normalizeSum win n $ j + e - f - i
     in s1 + s4 - s2 - s3
-{-# INLINE compute #-}
+{-# INLINABLE compute #-}
 
 -- | List all features inside a standard window.
 features :: [HaarFeature]

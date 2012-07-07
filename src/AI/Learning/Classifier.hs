@@ -36,7 +36,7 @@ class Classifier c t cl | c t -> cl where
     cClassScore :: c -> t -> (cl, Score)
 
     cClass classifier = fst . (classifier `cClassScore`)
-    {-# INLINE cClass #-}
+    {-# INLINABLE cClass #-}
 
 -- | Represents an instance of a testable item (entry, image ...) used during
 -- learning processes with a method to gets its class identifier (i.e. Bool
@@ -65,7 +65,7 @@ class StrongClassifierClass cl where
             => StrongClassifier weak -> t -> cl
     
     scClass classifier = fst . (classifier `scClassScore`)
-    {-# INLINE scClass #-}
+    {-# INLINABLE scClass #-}
     
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
 -- weak classifier type is itself an instance of 'Classifier' and the class
@@ -74,10 +74,10 @@ class StrongClassifierClass cl where
 instance (Classifier weak t cl, StrongClassifierClass cl) =>
          Classifier (StrongClassifier weak) t cl where
     cClassScore = scClassScore
-    {-# INLINE cClassScore #-}
+    {-# INLINABLE cClassScore #-}
     
     cClass = scClass
-    {-# INLINE cClass #-}
+    {-# INLINABLE cClass #-}
 
 -- | Instance for binary classes.
 instance StrongClassifierClass Bool where
@@ -90,7 +90,7 @@ instance StrongClassifierClass Bool where
             let (valid, score) = c `cClassScore` test
             in if valid then (ts + score * w, fs)
                         else (ts, fs + score * w)
-    {-# INLINE scClassScore #-}
+    {-# INLINABLE scClassScore #-}
 
 -- | Instance for classes with more than two states.
 instance StrongClassifierClass Int where
@@ -104,7 +104,7 @@ instance StrongClassifierClass Int where
         step acc (c, w) =
             let (cl, score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
-    {-# INLINE scClassScore #-}
+    {-# INLINABLE scClassScore #-}
 
 -- | Splits the list of tests in two list of tests, for training and testing
 -- following the ratio. Unsort the list of test before the separation.

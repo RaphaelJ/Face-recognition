@@ -41,7 +41,9 @@ windowWidth = 24
 windowHeight = 24
 
 windowPixels :: Int64
-windowPixels = int64 $ windowWidth * windowWidth
+windowPixels = 
+    let !v = int64 $ windowWidth * windowWidth
+    in v
 
 -- | Constructs a new 'Win' object, computing the commulative normal
 -- distribution using the standard derivation and the average of pixels values.
@@ -59,39 +61,42 @@ win rect@(Rect x y w h) integral squaredIntegral =
     normal x = (1 / (sig * sqrt2Pi)) * exp (-(x - avg)^2 / (2 * sig^2))
     -- The accumulative function of the normal distribution
     distribution =
-        listArray (0, 255) $ tail $ scanl (\acc x -> acc + normal x) 0 [0..255]
+        listArray (0, 255) $ tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
 
 -- | Gets the value of a point (as in the default window) inside the window,
 -- takes care of the window\'s size ratio, so two points in two windows of
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    ratio $ integral `I.getPixel` Point destX destY
+    integral `I.getPixel` Point destX destY
   where
+--     v = ratio $ integral `I.getPixel` Point destX destY
     -- New coordinates with the window\'s ratio
     destX = winX + ((x * w) `quot` windowWidth)
     destY = winY + ((y * h) `quot` windowHeight)
-    standardX = ((winX * windowWidth) `quot` w) + x
-    standardY = ((winY * windowHeight) `quot` h) + y
-    n = int64 $ destX * destY
-    standardN = int64 $ standardX * standardY
-    -- Sum with the window\'s size ratio
-    ratio v = 
-        v * int64 windowWidth * int64 windowHeight `quot` int64 w `quot` int64 h
-{-# INLINE getValue #-}
+--     standardX = ((winX * windowWidth) `quot` w) + x
+--     standardY = ((winY * windowHeight) `quot` h) + y
+--     n = int64 $ destX * destY
+--     standardN = int64 $ standardX * standardY
+--     -- Sum with the window\'s size ratio
+--     ratio v = 
+--         if n == 0 then 0 -- Division by zero
+--                   else v * standardN `quot` n
+--         v * standardN `quot` (n + 1)
+{-# INLINABLE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
 normalizeSum :: Win -> Int -> Int64 -> Int64
-normalizeSum (Win _ _ distribution) n s =
-    round $ double n * (normalize $ s `quot` int64 n) * 255
+normalizeSum (Win (Rect _ _ w h) _ distribution) n s =
+    round $ double n * (normalize $ s * int64 windowPixels `quot` int64 w `quot` int64  h `quot` int64 n)
   where
     normalize p = 
-        if p > 255 then traceShow p (distribution ! 255)
-                   else if p < 0 then traceShow p (distribution ! 0)
-                                 else distribution ! int p
-{-# INLINE normalizeSum #-}
+        if p > 255 then {-trace (" " ++ show p)-} (distribution ! 255)
+                   else if p < 0 then {-trace (" " ++ show p)-} (distribution ! 0)
+                                 else {-traceShow p $ -}distribution ! int p
+{-# INLINABLE normalizeSum #-}
 
 -- | Lists all features positions and sizes inside the default window.
 featuresPos :: Int -> Int -> [Rect]
@@ -114,7 +119,7 @@ windows integral squaredIntegral =
     sizeIncr = 125 % 100
     incrX = 2
     incrY = 2
-    maxPyramDeep = 20
+    maxPyramDeep = 15
     Size iWidth iHeight = I.getSize integral
     (width, height) = (iWidth - 1, iHeight - 1)
     maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
@@ -133,7 +138,7 @@ rectangles minWidth minHeight width height =
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    incrMult = 1
+    incrMult = 5
     incrX = 1 * incrMult
     incrY = 1 * incrMult
     incrWidth = minWidth * incrMult
