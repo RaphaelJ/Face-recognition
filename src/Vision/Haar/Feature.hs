@@ -139,7 +139,7 @@ compute (FourRect (Rect x y w h)) win =
         !s3 = W.normalizeSum win n $ i + d - e - g
         !s4 = W.normalizeSum win n $ j + e - f - i
     in s1 + s4 - s2 - s3
-{-# INLINE compute #-}
+{-# INLINABLE compute #-}
 
 -- | List all features inside a standard window.
 features :: [HaarFeature]

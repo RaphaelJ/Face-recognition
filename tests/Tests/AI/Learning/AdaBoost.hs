@@ -63,7 +63,7 @@ instance Classifier BupaClassifier BupaTestCase Bool where
              BupaSgot    -> stump `cClassScore` bupaSgot test
              BupaGammagt -> stump `cClassScore` bupaGammagt test
              BupaDrinks  -> stump `cClassScore` bupaDrinks test
-    {-# INLINE cClassScore #-}
+    {-# INLINABLE cClassScore #-}
 
 -- | Train the Bupa classifier by selecting the best 'DecisionStump' for the
 -- set of variables.

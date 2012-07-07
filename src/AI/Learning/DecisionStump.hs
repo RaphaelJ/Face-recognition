@@ -31,15 +31,15 @@ instance Ord a => Classifier (DecisionStump a) a Bool where
                        then val >= thres
                        else val < thres
         in (valid, 1.0)
-    {-# INLINE cClassScore #-}
+    {-# INLINABLE cClassScore #-}
     
 instance Ord a => TrainingTest (DecisionStumpTest a) Bool where
     tClass = dstValid
-    {-# INLINE tClass #-}
+    {-# INLINABLE tClass #-}
     
 instance Ord a => Classifier (DecisionStump a) (DecisionStumpTest a) Bool where
     stump `cClassScore` test = stump `cClassScore` (dstValue test)
-    {-# INLINE cClassScore #-}
+    {-# INLINABLE cClassScore #-}
 
 -- | Select the best threshold for the 'DecisionStump'. Positives tests gets a
 -- positive weight and negative tests a negative weight. Returns the stump with

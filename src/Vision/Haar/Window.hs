@@ -66,8 +66,11 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- different sizes can be compared.
 getValue :: Win -> Point -> Int64
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    ratio $ integral `I.getPixel` Point destX destY
+    if v > 255 * standardN || v < 0 
+       then traceShow (v, 255 * standardN, w % windowWidth) undefined
+       else v
   where
+    v = ratio $ integral `I.getPixel` Point destX destY
     -- New coordinates with the window\'s ratio
     destX = winX + ((x * w) `quot` windowWidth)
     destY = winY + ((y * h) `quot` windowHeight)
@@ -77,8 +80,8 @@ Win (Rect winX winY w h) integral _ `getValue` Point x y =
     standardN = int64 $ standardX * standardY
     -- Sum with the window\'s size ratio
     ratio v = 
-        v * int64 windowWidth * int64 windowHeight `quot` int64 w `quot` int64 h
-{-# INLINE getValue #-}
+        if standardN == 0 then 0 else v * standardN `quot` n
+{-# INLINABLE getValue #-}
     
 -- | Sums 's' over 'n' pixels normalized by the window\'s standard derivation.
 -- This way, two sums inside two windows of different size/standard derivation
@@ -91,7 +94,7 @@ normalizeSum (Win _ _ distribution) n s =
         if p > 255 then traceShow p (distribution ! 255)
                    else if p < 0 then traceShow p (distribution ! 0)
                                  else distribution ! int p
-{-# INLINE normalizeSum #-}
+{-# INLINABLE normalizeSum #-}
 
 -- | Lists all features positions and sizes inside the default window.
 featuresPos :: Int -> Int -> [Rect]
