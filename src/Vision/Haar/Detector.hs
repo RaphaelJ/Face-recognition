@@ -24,12 +24,9 @@ detect :: StrongClassifier HaarClassifier -> G.GreyImage -> [(Rect, Weight)]
 detect classifier image =
     let integral = II.integralImage image id
         squaredIintegral = II.integralImage image (^2)
-        wins = windows integral squaredIintegral
-        rects = map (\w -> (wRect w, classifier `cClassScore` w)) wins
-        valids = map (\(w, (v, s)) -> (w, s)) $ filter (\(w, (v, s)) -> v) rects
---         valids = [ (r, s) | w <- windows integral squaredIintegral
---             , let r = wRect w, let (v, s) = classifier `cClassScore` w, v
---             ]
+        valids = [ (r, s) | w <- windows integral squaredIintegral
+            , let r = wRect w, let (v, s) = classifier `cClassScore` w, v
+            ]
     in reverse $ sortBy (compare `on` snd) valids
 
 -- | Loads a strong 'HaarClassifier'.
