@@ -10,6 +10,7 @@ module Vision.Haar.Feature (
 import Debug.Trace
     
 import Data.Int
+import Data.Ratio
 
 import Data.List
     
@@ -160,28 +161,36 @@ featuresPos minWidth minHeight =
 
 -- | Lists all rectangles positions and sizes inside a rectangle of
 -- width * height.
+-- rectangles minWidth minHeight width height = [ Rect x y w h
+--     | w <- [minWidth,minWidth*2..width], h <- [minHeight,minHeight*2..height]
+--     , let incrX = round $ moveIncr * (integer w % integer minWidth)
+--     , let incrY = round $ moveIncr * (integer h % integer minHeight)
+--     , x <- [0,incrX..width-w], y <- [0,incrY..height-h]
+--     ]
+--   where
 rectangles minWidth minHeight width height = [ Rect x y w h 
-    | (w, h, movIncr') <- sizes
-    , x <- [0,movIncr'..width-w]
-    , y <- [0,movIncr'..height-h]
+    | x <- [0,incrX..width-minWidth]
+    , y <- [0,incrY..height-minHeight]
+    , w <- [minWidth,minWidth+incrWidth..width-x]
+    , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    sizeIncr = 1.25 :: Rational
-    movIncr = 1.5 :: Rational
+    sizeMult = 3
+    moveMult = 3
     
-    maxSize = min (width `quot` minWidth) (height `quot` minHeight)
-    sizes = nub [ (w, h, movIncr')
-        | mult <- takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) 1
-        , let w = round $ mult * fromIntegral minWidth
-        , let h = round $ mult * fromIntegral minHeight
-        , let movIncr' = round $ mult * movIncr
-        ]
---     incrMult = 3
---     
---     incrX = 1 * incrMult
---     incrY = 1 * incrMult
---     incrWidth = minWidth * incrMult
---     incrHeight = minHeight * incrMult
+    incrX = 1 * moveMult
+    incrY = 1 * moveMult
+    incrWidth = minWidth * sizeMult
+    incrHeight = minHeight * sizeMult
+    
+    moveIncr = 1 :: Rational
+    
+--     sizeIncrs =
+--         map round $ scanl (\acc m -> acc + 1 * m) 1 $ iterate (* sizeIncr) 1
+--     widths = takeWhile (<= width) $ map (* minWidth) sizeIncrs
+--     heights = takeWhile (<= height) $ map (* minHeight) sizeIncrs
 
+integer :: (Integral a) => a -> Integer
+integer = fromIntegral
 int64 :: (Integral a) => a -> Int64
 int64 = fromIntegral

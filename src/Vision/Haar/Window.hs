@@ -88,29 +88,31 @@ normalizeSum (Win _ _ distribution) standardN n s =
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows integral squaredIntegral = [ win (Rect x y w h) integral squaredIntegral
-    | size <- sizes
-    , let w = round $ size * fromIntegral windowWidth
-    , let h = round $ size * fromIntegral windowHeight
-    , let movIncr' = round $ size * movIncr
-    , x <- [0,movIncr'..width-w]
-    , y <- [0,movIncr'..height-h]
+    | sizeMult <- sizeMults
+    , let w = round $ sizeMult * fromIntegral windowWidth
+    , let h = round $ sizeMult * fromIntegral windowHeight
+    , let moveIcr' = round $ sizeMult * moveIcr
+    , x <- [0,moveIcr'..width-w]
+    , y <- [0,moveIcr'..height-h]
     ]
   where
-    sizeIncr = 1.25
-    movIncr = 1.5
+    sizeIncr = 1.25 :: Rational
+    moveIcr = 1.5 :: Rational
     maxPyramDeep = 15
     
     Size iiWidth iiHeight = I.getSize integral
     (width, height) = (iiWidth - 1, iiHeight - 1)
-    maxSize = min (width `quot` windowWidth) (height `quot` windowHeight)
-    minWidth = (width % maxPyramDeep) / fromIntegral windowWidth
-    minHeight = (height % maxPyramDeep) / fromIntegral windowHeight
-    minSize = max 1 (max minWidth minHeight)
-    sizes = takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) minSize
+    (width', height') = (integer width, integer height)
+    maxSizeMult =
+        min (width' % integer windowWidth) (height' % integer windowHeight)
+    minSizeMult = max 1 (maxSizeMult / (1.25^(maxPyramDeep-1)))
+    sizeMults = takeWhile (<= maxSizeMult) $ iterate (* sizeIncr) minSizeMult
 {-# INLINE windows #-}
 
 double :: Integral a => a -> Double
 double = fromIntegral
+integer :: Integral a => a -> Integer
+integer = fromIntegral
 int :: Integral a => a -> Int
 int = fromIntegral
 int64 :: Integral a => a -> Int64
