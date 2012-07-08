@@ -31,15 +31,15 @@ instance Ord a => Classifier (DecisionStump a) a Bool where
                        then val >= thres
                        else val < thres
         in (valid, 1.0)
-    {-# INLINABLE cClassScore #-}
+    {-# INLINE cClassScore #-}
     
 instance Ord a => TrainingTest (DecisionStumpTest a) Bool where
     tClass = dstValid
-    {-# INLINABLE tClass #-}
+    {-# INLINE tClass #-}
     
 instance Ord a => Classifier (DecisionStump a) (DecisionStumpTest a) Bool where
     stump `cClassScore` test = stump `cClassScore` (dstValue test)
-    {-# INLINABLE cClassScore #-}
+    {-# INLINE cClassScore #-}
 
 -- | Select the best threshold for the 'DecisionStump'. Positives tests gets a
 -- positive weight and negative tests a negative weight. Returns the stump with
@@ -72,11 +72,14 @@ trainDecisionStump ts =
         map (\(t, w) -> (dstValue t, if dstValid t then w else -w)) ts
     
     score = compare `on` snd
+{-# INLINE trainDecisionStump #-}
     
 -- | Sorts and groups values. Returns each distinct value with the sum of 
 -- weights.
 groupedValues :: Ord a => [(a, Weight)] -> [(a, Weight)]
-groupedValues =    
+groupedValues =
+    -- Sorting uses a lot of memory and lot of garbage collections during the
+    -- .
     sumWeights . sortBy (compare `on` fst)
   where
     -- Groups the same values in a tuple containing the value and the sum of 
@@ -85,3 +88,4 @@ groupedValues =
     sumWeights ((x, w) : xs) =
         let (same, xs') = span ((== x) . fst) xs
         in (x, w + sum (map snd same)) : sumWeights xs'
+{-# INLINE groupedValues #-}

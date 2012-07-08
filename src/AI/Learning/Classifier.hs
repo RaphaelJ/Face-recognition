@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -36,7 +37,7 @@ class Classifier c t cl | c t -> cl where
     cClassScore :: c -> t -> (cl, Score)
 
     cClass classifier = fst . (classifier `cClassScore`)
-    {-# INLINABLE cClass #-}
+    {-# INLINE cClass #-}
 
 -- | Represents an instance of a testable item (entry, image ...) used during
 -- learning processes with a method to gets its class identifier (i.e. Bool
@@ -65,7 +66,7 @@ class StrongClassifierClass cl where
             => StrongClassifier weak -> t -> cl
     
     scClass classifier = fst . (classifier `scClassScore`)
-    {-# INLINABLE scClass #-}
+    {-# INLINE scClass #-}
     
 -- | Each 'StrongClassifier' can be used as a 'Classifier' if the contained
 -- weak classifier type is itself an instance of 'Classifier' and the class
@@ -74,10 +75,10 @@ class StrongClassifierClass cl where
 instance (Classifier weak t cl, StrongClassifierClass cl) =>
          Classifier (StrongClassifier weak) t cl where
     cClassScore = scClassScore
-    {-# INLINABLE cClassScore #-}
+    {-# INLINE cClassScore #-}
     
     cClass = scClass
-    {-# INLINABLE cClass #-}
+    {-# INLINE cClass #-}
 
 -- | Instance for binary classes.
 instance StrongClassifierClass Bool where
@@ -85,26 +86,26 @@ instance StrongClassifierClass Bool where
         if trueScore > falseScore then (True, trueScore / weights)
                                   else (False, falseScore / weights)
       where
-        (trueScore, falseScore) = foldl' step (0, 0) cs
-        step (ts, fs) (c, w) =
-            let (valid, score) = c `cClassScore` test
+        (!trueScore, !falseScore) = foldl' step (0, 0) cs
+        step (!ts, !fs) (!c, !w) =
+            let (!valid, !score) = c `cClassScore` test
             in if valid then (ts + score * w, fs)
                         else (ts, fs + score * w)
-    {-# INLINABLE scClassScore #-}
+    {-# INLINE scClassScore #-}
 
 -- | Instance for classes with more than two states.
 instance StrongClassifierClass Int where
     StrongClassifier cs weights `scClassScore` test =
         (cl, score / weights)
       where
-        (cl, score) = maximumBy (compare `on` snd) classesScores
+        (!cl, !score) = maximumBy (compare `on` snd) classesScores
         -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes with score.
         classesScores = M.toList $ foldl' step M.empty cs
-        step acc (c, w) =
-            let (cl, score) = c `cClassScore` test
+        step !acc (!c, !w) =
+            let (!cl, !score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
-    {-# INLINABLE scClassScore #-}
+    {-# INLINE scClassScore #-}
 
 -- | Splits the list of tests in two list of tests, for training and testing
 -- following the ratio. Unsort the list of test before the separation.

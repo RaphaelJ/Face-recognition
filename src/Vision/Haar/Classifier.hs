@@ -25,4 +25,4 @@ instance Classifier HaarClassifier Win Bool where
     HaarClassifier feature stump `cClassScore` window =
         let !value = feature `compute` window
         in stump `cClassScore` value
-    {-# INLINABLE cClassScore #-}
+    {-# INLINE cClassScore #-}

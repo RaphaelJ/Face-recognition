@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Vision.Haar.Detector (
     -- * Functions
       detect
@@ -25,12 +27,13 @@ detect classifier image =
     let integral = II.integralImage image id
         squaredIintegral = II.integralImage image (^2)
 --         wins = windows integral squaredIintegral
+--         strategy = evalTuple2 r0 rseq
 --         rects = map (\w -> (wRect w, classifier `cClassScore` w)) wins
 --         valids = map (\(w, (v, s)) -> (w, s)) $ filter (\(w, (v, s)) -> v) rects
-        valids = [ (r, s) | w <- windows integral squaredIintegral
-            , let r = wRect w, let (v, s) = classifier `cClassScore` w, v
+        valids = [ (r, s) | !w <- windows integral squaredIintegral
+            , let r = wRect w, let (!v, !s) = classifier `cClassScore` w, v
             ]
-    in reverse $ sortBy (compare `on` snd) valids
+    in {-reverse $ sortBy (compare `on` snd) -}valids
 
 -- | Loads a strong 'HaarClassifier'.
 loadClassifier :: FilePath -> IO (StrongClassifier HaarClassifier)

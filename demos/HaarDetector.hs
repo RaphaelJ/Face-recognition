@@ -12,7 +12,7 @@ main = do
             i <- I.load imagePath :: IO G.GreyImage
             c <- loadClassifier classifierPath
             let rs = detect c i
-            I.save outPath $ drawRectangles i (take 15 $ map fst rs)
+            I.save outPath $ drawRectangles i (map fst rs)
             
             print rs
         _ ->

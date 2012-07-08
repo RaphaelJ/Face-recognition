@@ -47,7 +47,7 @@ integralImage image f =
 
     Size w h = I.getSize image
     value x y = f $ int64 $ image `I.getPixel` Point x y
-{-# INLINABLE integralImage #-}
+{-# INLINE integralImage #-}
 
 instance I.Image IntegralImage Int64 Int64 where
     fromList size xs =
