@@ -66,9 +66,9 @@ win rect@(Rect x y w h) integral squaredIntegral =
 -- | Gets the value of a point (as in the default window) inside the window,
 -- takes care of the window\'s size ratio, so two points in two windows of
 -- different sizes can be compared.
-getValue :: Win -> Point -> Int64
+getValue :: Win -> Point -> (Int64, Int)
 Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    integral `I.getPixel` Point destX destY
+    (integral `I.getPixel` Point destX destY, destX * destY)
   where
 --     v = ratio $ integral `I.getPixel` Point destX destY
     -- New coordinates with the window\'s ratio
@@ -93,8 +93,8 @@ normalizeSum (Win (Rect _ _ w h) _ distribution) n s =
     round $ double n * (normalize $ s * int64 windowPixels `quot` int64 w `quot` int64  h `quot` int64 n)
   where
     normalize p = 
-        if p > 255 then {-trace (" " ++ show p)-} (distribution ! 255)
-                   else if p < 0 then {-trace (" " ++ show p)-} (distribution ! 0)
+        if p > 255 then trace (" " ++ show p) (distribution ! 255)
+                   else if p < 0 then trace (" " ++ show p) (distribution ! 0)
                                  else {-traceShow p $ -}distribution ! int p
 {-# INLINABLE normalizeSum #-}
 
