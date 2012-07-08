@@ -6,7 +6,7 @@ module Vision.Haar.Window (
     -- * Constants
     , windowWidth, windowHeight
     -- * Functions
-    , getValue, normalizeSum, featuresPos, windows
+    , getValue, normalizeSum, windows
     ) where
 
 import Debug.Trace
@@ -85,16 +85,9 @@ normalizeSum (Win _ _ distribution) standardN n s =
     normalize p = distribution ! int p
 {-# INLINE normalizeSum #-}
 
--- | Lists all features positions and sizes inside the default window.
-featuresPos :: Int -> Int -> [Rect]
-featuresPos minWidth minHeight =
-    rectangles minWidth minHeight windowWidth windowHeight
-{-# INLINE featuresPos #-}
-
 -- | Lists all windows for any positions and sizes inside an image.
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
-windows integral squaredIntegral =
-    [ win (Rect x y w h) integral squaredIntegral
+windows integral squaredIntegral = [ win (Rect x y w h) integral squaredIntegral
     | size <- sizes
     , let w = round $ size * fromIntegral windowWidth
     , let h = round $ size * fromIntegral windowHeight
@@ -115,24 +108,6 @@ windows integral squaredIntegral =
     minSize = max 1 (max minWidth minHeight)
     sizes = takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) minSize
 {-# INLINE windows #-}
-
--- | Lists all rectangles positions and sizes inside a rectangle of
--- width * height.
-rectangles minWidth minHeight width height =
-    [ Rect x y w h 
-    | x <- [0,incrX..width-minWidth]
-    , y <- [0,incrY..height-minHeight]
-    , w <- [minWidth,minWidth+incrWidth..width-x]
-    , h <- [minHeight,minHeight+incrHeight..height-y]
-    ]
-  where
-    incrMult = 3
-    
-    incrX = 1 * incrMult
-    incrY = 1 * incrMult
-    incrWidth = minWidth * incrMult
-    incrHeight = minHeight * incrMult
-{-# INLINE rectangles #-}
 
 double :: Integral a => a -> Double
 double = fromIntegral

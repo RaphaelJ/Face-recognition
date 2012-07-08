@@ -4,12 +4,14 @@ module Vision.Haar.Feature (
     -- * Types & constructors
       HaarFeature (..)
     -- * Functions
-    , compute, features
+    , compute, features, featuresPos
     ) where
 
 import Debug.Trace
     
 import Data.Int
+
+import Data.List
     
 import qualified Vision.Haar.Window as W
 import Vision.Primitive (Point (..), Rect (..))
@@ -144,12 +146,42 @@ compute (FourRect (Rect x y w h)) win =
 -- | List all features inside a standard window.
 features :: [HaarFeature]
 features =
-    map TwoVertRect (W.featuresPos 1 2) ++
-    map TwoHorizRect (W.featuresPos 2 1) ++
-    map ThreeVertRect (W.featuresPos 1 3) ++
-    map ThreeHorizRect (W.featuresPos 3 1) ++
-    map FourRect (W.featuresPos 2 2)
-{-# INLINE features #-}
+    map TwoVertRect (featuresPos 1 2) ++
+    map TwoHorizRect (featuresPos 2 1) ++
+    map ThreeVertRect (featuresPos 1 3) ++
+    map ThreeHorizRect (featuresPos 3 1) ++
+    map FourRect (featuresPos 2 2)
+    
+-- | Lists all features positions and sizes inside the default window.
+featuresPos :: Int -> Int -> [Rect]
+featuresPos minWidth minHeight =
+    rectangles minWidth minHeight W.windowWidth W.windowHeight
+{-# INLINE featuresPos #-}
+
+-- | Lists all rectangles positions and sizes inside a rectangle of
+-- width * height.
+rectangles minWidth minHeight width height = [ Rect x y w h 
+    | (w, h, movIncr') <- sizes
+    , x <- [0,movIncr'..width-w]
+    , y <- [0,movIncr'..height-h]
+    ]
+  where
+    sizeIncr = 1.25 :: Rational
+    movIncr = 1.5 :: Rational
+    
+    maxSize = min (width `quot` minWidth) (height `quot` minHeight)
+    sizes = nub [ (w, h, movIncr')
+        | mult <- takeWhile (<= fromIntegral maxSize) $ iterate (* sizeIncr) 1
+        , let w = round $ mult * fromIntegral minWidth
+        , let h = round $ mult * fromIntegral minHeight
+        , let movIncr' = round $ mult * movIncr
+        ]
+--     incrMult = 3
+--     
+--     incrX = 1 * incrMult
+--     incrY = 1 * incrMult
+--     incrWidth = minWidth * incrMult
+--     incrHeight = minHeight * incrMult
 
 int64 :: (Integral a) => a -> Int64
 int64 = fromIntegral
