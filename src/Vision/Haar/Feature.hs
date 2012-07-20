@@ -175,8 +175,8 @@ rectangles minWidth minHeight width height = [ Rect x y w h
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    sizeMult = 2
-    moveMult = 2
+    sizeMult = 1
+    moveMult = 1
     
     incrX = 1 * moveMult
     incrY = 1 * moveMult
