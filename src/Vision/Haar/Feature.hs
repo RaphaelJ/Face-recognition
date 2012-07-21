@@ -176,11 +176,7 @@ rectangles minWidth minHeight width height = [ Rect x y w h
     ]
   where
     sizeMult = 1
-<<<<<<< HEAD
-    moveMult = 2
-=======
     moveMult = 1
->>>>>>> 7ffbe6c80f794ffe863c7737c61bf26f547a1731
     
     incrX = 1 * moveMult
     incrY = 1 * moveMult
