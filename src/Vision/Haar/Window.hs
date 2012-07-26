@@ -98,7 +98,7 @@ windows integral squaredIntegral = [ win (Rect x y w h) integral squaredIntegral
   where
     sizeIncr = 1.25 :: Rational
     moveIcr = 1.5 :: Rational
-    maxPyramDeep = 15
+    maxPyramDeep = 11
     
     Size iiWidth iiHeight = I.getSize integral
     (width, height) = (iiWidth - 1, iiHeight - 1)

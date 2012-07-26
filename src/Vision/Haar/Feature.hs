@@ -161,13 +161,6 @@ featuresPos minWidth minHeight =
 
 -- | Lists all rectangles positions and sizes inside a rectangle of
 -- width * height.
--- rectangles minWidth minHeight width height = [ Rect x y w h
---     | w <- [minWidth,minWidth*2..width], h <- [minHeight,minHeight*2..height]
---     , let incrX = round $ moveIncr * (integer w % integer minWidth)
---     , let incrY = round $ moveIncr * (integer h % integer minHeight)
---     , x <- [0,incrX..width-w], y <- [0,incrY..height-h]
---     ]
---   where
 rectangles minWidth minHeight width height = [ Rect x y w h 
     | x <- [0,incrX..width-minWidth]
     , y <- [0,incrY..height-minHeight]
@@ -175,20 +168,13 @@ rectangles minWidth minHeight width height = [ Rect x y w h
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    sizeMult = 1
-    moveMult = 1
+    sizeMult = 2
+    moveMult = 2
     
     incrX = 1 * moveMult
     incrY = 1 * moveMult
     incrWidth = minWidth * sizeMult
     incrHeight = minHeight * sizeMult
-    
-    moveIncr = 1 :: Rational
-    
---     sizeIncrs =
---         map round $ scanl (\acc m -> acc + 1 * m) 1 $ iterate (* sizeIncr) 1
---     widths = takeWhile (<= width) $ map (* minWidth) sizeIncrs
---     heights = takeWhile (<= height) $ map (* minHeight) sizeIncrs
 
 integer :: (Integral a) => a -> Integer
 integer = fromIntegral

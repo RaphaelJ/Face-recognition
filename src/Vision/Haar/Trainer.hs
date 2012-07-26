@@ -7,7 +7,7 @@ module Vision.Haar.Trainer (
     -- * Weak classifier selector
     , selectHaarClassifier
     -- * Impure utilities
-    , train
+    , train, classifierStats
     ) where
 
 import Control.Monad
@@ -82,9 +82,9 @@ train directory steps savePath = do
     print $ length features
     print chunksSize
     putStrLn "Loading images ..."
-    good <- loadIntegrals True (directory </> "good")
+    good <- loadGood
     putStrLn "\tgood/ loaded"
-    bad <- loadIntegrals False (directory </> "bad")
+    bad <- loadBad
     putStrLn "\tbad/ loaded"
     let (training, testing) = splitTests (90 % 100) (good ++ bad)
 
@@ -97,7 +97,12 @@ train directory steps savePath = do
     putStrLn "Save classifier ..."
     writeFile savePath $ show classifier
   where
-    loadIntegrals isValid = (trainingImages isValid `fmap`) . loadImages
+    loadGood = do
+        images <- loadImages (directory </> "good")
+        -- Computes the horizontal mirror for each valid image:
+        return $! trainingImages True (images ++ map I.horizontalFlip images)
+    loadBad =
+        trainingImages False `fmap` loadImages (directory </> "bad")
 
     loadImages dir = do
         paths <- sort `fmap` getDirectoryContents dir
@@ -105,19 +110,19 @@ train directory steps savePath = do
 
     loadImage path = do
         img <- I.load path
-        return $ I.resize img $ Size windowWidth windowHeight
+        return $! I.resize img $ Size windowWidth windowHeight
 
-    excludeHidden = filter $ ((/=) '.') . head
-        
--- | Prints the statistics of the sub classifier of the Haar\'s cascade on a set
--- of tests.
+    excludeHidden = filter (((/=) '.') . head)
+
+-- | Prints the statistics of the sub classifiers of the Haar\'s cascade on a
+-- set of tests.
 classifierStats :: StrongClassifier HaarClassifier -> [TrainingImage] -> IO ()
 classifierStats classifier tests = do
     putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
     
     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
     let !cs' = cs `using` parList (evalTuple2 rseq rseq)
-    putStrLn "Sub classifiers length by score:"
+    putStrLn "Sub classifiers length sorted by score:"
     forM_ cs' $ \(StrongClassifier wcs ws, score) -> do
         putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
         

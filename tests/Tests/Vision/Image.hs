@@ -30,17 +30,23 @@ instance (I.Image i p a, Arbitrary a) => Arbitrary i where
             return $ I.valuesToPix vals
 
 tests = [
-      testProperty "Grey to/from RGBA" $ propGreyRGBA
+      {-testProperty "Grey to/from RGBA" $ propGreyRGBA
     , testProperty "Grey to/from RGB" $ propGreyRGB
     , testProperty "RGB to/from RGBA" $ propRGBRGBA
-    , testProperty "Image resize Grey" $
+    , testProperty "Image resize Grey"
         (propImageResize :: I.GreyImage -> Bool)
-    , testProperty "Image resize RGBA" $
+    , testProperty "Image resize RGBA"
         (propImageResize :: I.RGBAImage -> Bool)
-    , testProperty "Image resize RGB" $
+    , testProperty "Image resize RGB" 
         (propImageResize :: I.RGBImage -> Bool)
-    , testProperty "Integral values" $ propIntegralPixels
-    , testProperty "Integral sumRectangle" $ propIntegralSumRectangle
+    ,-} testProperty "Image horizontal flip Grey"
+        (propImageHorizontalFlip :: I.GreyImage -> Bool)
+    , testProperty "Image horizontal flip RGBA"
+        (propImageHorizontalFlip :: I.RGBAImage -> Bool)
+    , testProperty "Image horizontal flip RGB" 
+        (propImageHorizontalFlip :: I.RGBImage -> Bool)
+--     , testProperty "Integral values" $ propIntegralPixels
+--     , testProperty "Integral sumRectangle" $ propIntegralSumRectangle
     ]
 
 -- | Tests if the converts a greyscale to and from RGBA gives the same image.
@@ -64,6 +70,11 @@ propImageResize :: (Eq i, I.Image i p a) => i -> Bool
 propImageResize image =
     let size@(Size w h) = I.getSize image
     in image == I.resize (I.resize image (Size (w * 2) (h * 2))) size
+    
+-- | Tests if applying the horizontal flip twice gives the original image.
+propImageHorizontalFlip :: (Eq i, I.Image i p a) => i -> Bool
+propImageHorizontalFlip image =
+    image == I.horizontalFlip (I.horizontalFlip image)
 
 -- | Tests if all pixels from the 'IntegralImage' give the correct sum.
 propIntegralPixels :: I.GreyImage -> Bool

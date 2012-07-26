@@ -9,7 +9,7 @@ module Vision.Image (
     , module Vision.Image.RGBImage
     
     -- * Misc images tranformations
-    , resize, drawRectangle
+    , resize, drawRectangle, horizontalFlip
     ) where
         
 import Debug.Trace
@@ -97,3 +97,14 @@ drawRectangle image back border (Rect rx ry rw rh) =
     rx' = rx + rw - 1
     ry' = ry + rh - 1
 {-# INLINABLE drawRectangle #-}
+
+-- | Reverses the image horizontally.
+horizontalFlip :: Image i p a => i -> i
+horizontalFlip image =
+    fromFunction (getSize image) $ \(Point x' y) ->
+        let x = maxX - x'
+        in image `unsafeGetPixel` Point x y
+  where
+    Size w h = getSize image
+    maxX = w - 1
+{-# INLINABLE horizontalFlip #-}
