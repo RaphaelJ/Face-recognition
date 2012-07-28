@@ -44,18 +44,22 @@ instance Ord a => Classifier (DecisionStump a) (DecisionStumpTest a) Bool where
 -- | Select the best threshold for the 'DecisionStump'. Positives tests gets a
 -- positive weight and negative tests a negative weight. Returns the stump with
 -- its error score.
-trainDecisionStump :: Ord a => [(DecisionStumpTest a, Weight)] 
+trainDecisionStump :: Ord a => 
+                    -- | Will decrease the threshold until the detection score 
+                    -- is obtained.
+                      Maybe Score
+                   -> [(DecisionStumpTest a, Weight)] 
                    -> (DecisionStump a, Score)
-trainDecisionStump ts =
+trainDecisionStump score ts = 
     -- Selects the best classifier over all features.
     maximumBy score stumps
   where
-    -- Lists all possibles stumps configurations associated with theirs
+    -- | Lists all possibles stumps configurations associated with theirs
     -- error for the set of tests.
     stumps =
         -- The first computed stump will give 'True' for each test, so its
         -- score is the weight of valid tests.
-        fst $ foldl' step ([], weightValid) (groupedValues testValues)
+        fst $ foldl' step ([], weightValid) groupedValues
     
     step (cs, trueScore) (value, weights) =
         let c1 = (DecisionStump value True, trueScore)
@@ -65,27 +69,22 @@ trainDecisionStump ts =
             trueScore' = trueScore - weights
         in (c1 : c2 : cs, trueScore')
 
-    -- Sums the weight of all valid tests.
+    -- | Sums the weight of all valid tests.
     weightValid = sum [ w | (t, w) <- ts, dstValid t ]
+
+    -- | Sorts and then groups values. Returns each distinct value with the 
+    -- sum of all of its weights.
+    groupedValues = groups $ sortBy (compare `on` (dstValue . fst)) ts
     
-    testValues = 
-        map (\(t, w) -> (dstValue t, if dstValid t then w else -w)) ts
+    -- | Groups the same consecutive values and sums their weights.
+    groups []     = []
+    groups (t:ts') =
+        let value = dstValue $ fst t
+            (same, ts'') = span ((== value) . dstValue . fst) ts'
+            groupWeight = sum $ map signedWeight (t : same)
+        in (value, groupWeight) : groups ts''
+    
+    signedWeight (t, w) = if dstValid t then w else -w
     
     score = compare `on` snd
-{-# INLINE trainDecisionStump #-}
-    
--- | Sorts and groups values. Returns each distinct value with the sum of 
--- weights.
-groupedValues :: Ord a => [(a, Weight)] -> [(a, Weight)]
-groupedValues =
-    -- Sorting uses a lot of memory and lot of garbage collections during the
-    -- .
-    sumWeights . sortBy (compare `on` fst)
-  where
-    -- Groups the same values in a tuple containing the value and the sum of 
-    -- weights
-    sumWeights []            = []
-    sumWeights ((x, w) : xs) =
-        let (same, xs') = span ((== x) . fst) xs
-        in (x, w + sum (map snd same)) : sumWeights xs'
-{-# INLINE groupedValues #-}
+{-# INLINE trainDecisionStump #-} -- Inline will specialise the function 

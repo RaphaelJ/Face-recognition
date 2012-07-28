@@ -6,8 +6,6 @@ module Vision.Haar.Feature (
     -- * Functions
     , compute, features, featuresPos
     ) where
-
-import Debug.Trace
     
 import Data.Int
 import Data.Ratio
@@ -168,8 +166,8 @@ rectangles minWidth minHeight width height = [ Rect x y w h
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    sizeMult = 2
-    moveMult = 2
+    sizeMult = 3
+    moveMult = 3
     
     incrX = 1 * moveMult
     incrY = 1 * moveMult

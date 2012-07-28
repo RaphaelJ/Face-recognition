@@ -29,11 +29,11 @@ caseAdaBoost = do
     -- Trains on the first 75% values and test the score on the 25% values which
     -- remains.
     let (training, testing) = splitTests (75 % 100) tests 
-    let classifier = adaBoost 200 training trainBupaClassifier
+    let classifier = adaBoost (Left 200) training trainBupaClassifier
     let score = classifierScore classifier testing
     putStrLn $ "AdaBoost performance is " ++ show (score * 100) ++ "%"
     
-    assertBool "AdaBoost performance is less than 60%" (score > 0.6)
+    assertBool "AdaBoost performance is less than 66%" (score > 0.65)
 
 data BupaTestCase = BupaTestCase {
       bupaMcv :: Int, bupaAlkphos :: Int, bupaSgpt :: Int, bupaSgot :: Int
@@ -77,7 +77,7 @@ trainBupaClassifier ts =
   where
     trainVar :: BupaVariable -> (BupaTestCase -> Int) -> (BupaClassifier, Score)
     trainVar variable getter =
-        let (stump, score) = trainDecisionStump $ applyGetter getter ts
+        let (stump, score) = trainDecisionStump Nothing $ applyGetter getter ts
         in (BupaClassifier variable stump, score)
     
     applyGetter getter = map $ \(t, w) -> 

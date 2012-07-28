@@ -60,7 +60,7 @@ selectHaarClassifier ts =
     -- Selects the best 'DecisionStump' over all features.
     maximumBy (compare `on` snd) bestClassifiers
   where
-    -- Compute the best 'DecisionStump' for each feature on the set of tests,
+    -- | Compute the best 'DecisionStump' for each feature on the set of tests,
     -- using parallel computing.
     bestClassifiers =
         let strategy = evalTuple2 rseq rseq
@@ -68,8 +68,9 @@ selectHaarClassifier ts =
            -- evaluated at the same time.
         in map featureStump features `using` parListChunk chunksSize strategy
     
+    -- | Trains the best 'DecisionStump' for the feature and the set of tests.
     featureStump f =
-        let (stump, score) = trainDecisionStump [
+        let (stump, score) = trainDecisionStump Nothing [
                   (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w)
                 | (t, w) <- ts
                 ]
@@ -86,13 +87,13 @@ train directory steps savePath = do
     putStrLn "\tgood/ loaded"
     bad <- loadBad
     putStrLn "\tbad/ loaded"
-    let (training, testing) = splitTests (90 % 100) (good ++ bad)
+    let (trainingSet, testingSet) = splitTests (90 % 100) (good ++ bad)
 
-    putStrLn $ "Train on " ++ show (length training) ++ " image(s) ..."
-    let classifier = adaBoost steps training selectHaarClassifier
+    putStrLn $ "Train on " ++ show (length trainingSet) ++ " image(s) ..."
+    let classifier = adaBoost (Left steps) trainingSet selectHaarClassifier
     print classifier
 
-    classifierStats classifier testing
+    classifierStats classifier testingSet
     
     putStrLn "Save classifier ..."
     writeFile savePath $ show classifier

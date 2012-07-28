@@ -19,8 +19,7 @@ data HaarClassifier = HaarClassifier {
       hcFeature :: !HaarFeature, hcStump :: !(DecisionStump Int64)
     } deriving (Show, Read)
 
--- | The 'HaarClassifier' is able to classify a part of an image using its
--- iteration window.
+-- | The 'HaarClassifier' is able to classify a iteration window from an image.
 instance Classifier HaarClassifier Win Bool where
     HaarClassifier feature stump `cClassScore` window =
         let !value = feature `compute` window
