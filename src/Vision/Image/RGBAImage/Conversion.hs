@@ -1,7 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Image.RGBAImage.Conversion (
-    ) where
+module Vision.Image.RGBAImage.Conversion () where
 
 import Data.Convertible (Convertible (..))
 

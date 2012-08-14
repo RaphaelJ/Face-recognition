@@ -4,15 +4,17 @@ module Vision.Image.IntegralImage (
     -- * Type
       IntegralImage (..), IIPixel
     -- * Functions 
-    , integralImage, sumRectangle, imageShape
+    , integralImage, sumRectangle, imageShape, originalSize
     ) where
 
-import Debug.Trace
+import Control.Monad
+import Control.Monad.ST (ST)
+import Data.Array.MArray (newArray, readArray, writeArray)
+import Data.Array.ST (STUArray, runSTUArray)
+import Data.STRef (newSTRef, readSTRef, modifySTRef)
 
-import Data.Array.IArray ((!), array, listArray, bounds, elems)
-import Data.Array (Array)
+import Data.Array.IArray ((!), listArray, bounds)
 import Data.Array.Unboxed (UArray)
-import qualified Data.Array.Repa as R
 import Data.Int
 
 import qualified Vision.Image.IImage as I
@@ -26,28 +28,46 @@ type IIPixel = Int64
 -- | Computes an 'IntegralImage' using a transformation function on each pixel.
 integralImage :: G.GreyImage -> (Int64 -> Int64) -> IntegralImage
 integralImage image f =
-    IntegralImage $ uintegral
+    IntegralImage (runSTUArray integral)
   where
-    uintegral = listArray (bounds integral) (elems integral)
-      
-    integral :: Array (Int, Int) Int64
-    integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
-
-    -- Initializes the first row and the first column to zero
-    topValues = scanl (\acc x -> ((0, x), 0)) ((0, 0), 0) [1..w]
-    leftValues = scanl (\acc y -> ((y, 0), 0)) ((0, 0), 0) [1..h]
-
-    values = [ ((y, x), pix + left + top - topLeft) |
-          y <- [1..h], x <- [1..w]
-        , let pix = value (x-1) (y-1)
-        , let topLeft = integral ! (y-1, x-1)
-        , let top = integral ! (y-1, x)
-        , let left = integral ! (y, x-1)
-        ]
-
+    integral :: ST s (STUArray s (Int, Int) Int64)
+    integral = do
+        arr <- newArray ((0, 0), (h, w)) 0
+        
+        forM_ [1..h] $ \y -> do
+            colSumRef <- newSTRef 0
+            forM_ [1..w] $ \x -> do
+                let pix = value (x-1) (y-1)
+                top <- readArray arr (y-1, x)
+                
+                modifySTRef colSumRef (+ pix)
+                colSum <- readSTRef colSumRef
+                writeArray arr (y, x) (colSum + top)
+        
+        return arr
+    
+--  This pure implementation is not as efficient and uses a lot of memory.
+--
+--     uintegral = listArray (bounds integral) (elems integral)
+--       
+--     integral :: Array (Int, Int) Int64
+--     integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
+-- 
+--     -- Initializes the first row and the first column to zero
+--     topValues = map (\x -> ((0, x), 0)) [0..w]
+--     leftValues = map (\y -> ((y, 0), 0)) [0..h]
+-- 
+--     values = [ ((y, x), pix + left + top - topLeft) |
+--           y <- [1..h], x <- [1..w]
+--         , let pix = value (x-1) (y-1)
+--         , let topLeft = integral ! (y-1, x-1)
+--         , let top = integral ! (y-1, x)
+--         , let left = integral ! (y, x-1)
+--         ]
+-- 
     Size w h = I.getSize image
     value x y = f $ int64 $ image `I.getPixel` Point x y
-{-# INLINE integralImage #-}
+{-# INLINE integralImage #-} -- Inline the transformation function
 
 instance I.Image IntegralImage Int64 Int64 where
     fromList size xs =
@@ -67,23 +87,24 @@ instance I.Pixel Int64 Int64 where
     pixToValues pix = [pix]
     {-# INLINE pixToValues #-}
     
-    valuesToPix [pix] = pix
+    valuesToPix ~[pix] = pix
     {-# INLINE valuesToPix #-}
     
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
        
 -- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
-sumRectangle integral (Rect x y w h) =
+sumRectangle :: IntegralImage -> Rect -> Int64
+sumRectangle ii (Rect x y w h) =
     -- a ------- b
     -- -         -
     -- -    S    -
     -- -         -
     -- c ------- d
-    let a = integral `I.getPixel` Point x y
-        b = integral `I.getPixel` Point (x+w) y
-        c = integral `I.getPixel` Point x (y+h)
-        d = integral `I.getPixel` Point (x+w) (y+h)
+    let a = ii `I.getPixel` Point x y
+        b = ii `I.getPixel` Point (x+w) y
+        c = ii `I.getPixel` Point x (y+h)
+        d = ii `I.getPixel` Point (x+w) (y+h)
     in d + a - b - c
 {-# INLINE sumRectangle #-}
 
@@ -91,6 +112,14 @@ sumRectangle integral (Rect x y w h) =
 imageShape :: Size -> ((Int, Int), (Int, Int))
 imageShape (Size w h) = ((0, 0), (h-1, w-1))
 {-# INLINE imageShape #-}
+
+-- | Returns the size of the original image.
+originalSize :: IntegralImage -> Size
+originalSize ii = 
+    Size (iiWidth - 1) (iiHeight - 1)
+  where
+    Size iiWidth iiHeight = I.getSize ii
+{-# INLINE originalSize #-}
 
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral

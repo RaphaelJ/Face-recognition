@@ -1,7 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Image.RGBImage.Conversion (
-    ) where
+module Vision.Image.RGBImage.Conversion () where
 
 import Data.Word
 

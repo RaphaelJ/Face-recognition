@@ -9,7 +9,7 @@ import qualified Data.Array.Repa.IO.DevIL as IL
 import Data.Convertible (Convertible (..), convert)
 
 import Vision.Image.GreyImage.Base (GreyImage (..))
-import Vision.Image.GreyImage.Conversion
+import Vision.Image.GreyImage.Conversion ()
 import Vision.Image.RGBImage.Base as RGB
 import Vision.Image.RGBAImage.Base as RGBA
     

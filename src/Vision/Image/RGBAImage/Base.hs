@@ -9,7 +9,7 @@ import Data.Word
 
 import Data.Array.Repa (
       Array, D, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromListUnboxed
-    , fromFunction, extent, delay
+    , computeUnboxedS, fromFunction, extent, delay
     )
 
 import qualified Vision.Image.IImage as I
@@ -66,15 +66,22 @@ instance I.Image RGBAImage RGBAPixel Word8 where
         }
     {-# INLINE unsafeGetPixel #-}
     
+    force (RGBAImage image) = 
+        RGBAImage $ delay $ computeUnboxedS image
+    {-# INLINE force #-}
+    
 instance I.Pixel RGBAPixel Word8 where
     pixToValues (RGBAPixel r g b a) = [r, g, b, a]
     {-# INLINE pixToValues #-}
     
-    valuesToPix (r : g : b : a : _) = RGBAPixel r g b a
+    valuesToPix ~(r : g : b : a : _) = RGBAPixel r g b a
     {-# INLINE valuesToPix #-}
     
     RGBAPixel r g b a `pixApply` f = RGBAPixel (f r) (f g) (f b) (f a) 
     {-# INLINE pixApply #-}
+    
+{-# SPECIALIZE I.resize :: RGBAImage -> Size -> RGBAImage #-}
+{-# SPECIALIZE I.horizontalFlip :: RGBAImage -> RGBAImage #-}
     
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3

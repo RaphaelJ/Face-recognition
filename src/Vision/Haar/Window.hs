@@ -4,17 +4,17 @@ module Vision.Haar.Window (
     -- * Types & constructors
       Win (..), win
     -- * Constants
-    , windowWidth, windowHeight
+    , windowWidth, windowHeight, sizeIncr, moveIcr, maxPyramDeep
     -- * Functions
-    , getValue, normalizeSum, windows
+    , getValue, normalizeSum, windows, randomWindows, nWindows
     ) where
 
-import Debug.Trace
-    
-import Data.Array.Unboxed (UArray, listArray, (!))
+import Data.Array (Array)
+import Data.Array.IArray (bounds, listArray, (!))
+import Data.Array.Unboxed (UArray)
 import Data.Int
-import Data.Word
 import Data.Ratio
+import System.Random (RandomGen, randomR)
 
 import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
@@ -24,38 +24,48 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 data Win = Win {
       wRect :: {-# UNPACK #-} !Rect
     , wIntegral :: {-# UNPACK #-} !II.IntegralImage 
-    -- | Values ([0;255]) of the commulative normal distribution for each 
+    -- | Values ([0;255]) of the cumulative normal distribution for each 
     -- pixels values ([0; 255]) based on the average and the standard derivation
     -- of the 'Win' pixels values.
     -- 
-    -- Used to equalize the values inside 'Win' histogram. This will return the
-    -- value of the pixel of value @x@ in the equalized distribution:
+    -- Used to equalise the values inside 'Win' histogram. This will return the
+    -- value of the pixel of value @x@ in the equalised distribution:
     -- 
     -- > wDistibution win ! x
     , wDistibution :: {-# UNPACK #-} !(UArray Int Double)
+--     , wDistibution :: UArray Int Double
     }
 
--- Default window\'s size.
+-- | Default window\'s size.
 windowWidth, windowHeight :: Int
 windowWidth = 24
 windowHeight = 24
 
--- | Constructs a new 'Win' object, computing the commulative normal
+-- | Defines how the algorithm iterate the window on the image. 
+sizeIncr, moveIcr :: Rational
+sizeIncr = 1.25
+moveIcr = 1.5
+
+-- | Defines how large will be the smallest windows.
+maxPyramDeep :: Int
+maxPyramDeep = 16
+
+-- | Constructs a new 'Win' object, computing the cumulative normal
 -- distribution using the standard derivation and the average of pixels values.
 win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
-win rect@(Rect x y w h) integral squaredIntegral =
-    Win rect integral (listArray (0, 255) distribution)
+win rect@(Rect _ _ w h) ii sqii =
+    Win rect ii (listArray (0, 255) distribution)
   where
     avg = valuesSum / n
-    sig = max 1 $ sqrt $ (squaresSum / n) - avg^2
+    sig = max 1 $ sqrt $ (squaresSum / n) - avg^(2 :: Int)
     n = double $ w * h
-    valuesSum = double $ II.sumRectangle integral rect
-    squaresSum = double $ II.sumRectangle squaredIntegral rect
+    valuesSum = double $ II.sumRectangle ii rect
+    squaresSum = double $ II.sumRectangle sqii rect
     
     -- The normal distribution of the window
     !a = 1 / (sig * sqrt (2 * pi)) -- Precompute some terms
-    !b = 2 * sig^2
-    normal x = a * exp (-(x - avg)^2 / b)
+    !b = 2 * sig^(2 :: Int)
+    normal x = a * exp (-(x - avg)^(2 :: Int) / b)
     
     -- The accumulative function of the normal distribution
     distribution =
@@ -64,8 +74,8 @@ win rect@(Rect x y w h) integral squaredIntegral =
 
 -- | Gets the value of a point (in default window coordinates) inside a window.
 getValue :: Win -> Point -> (Int64, Int)
-Win (Rect winX winY w h) integral _ `getValue` Point x y =
-    (integral `I.getPixel` Point destX destY, destX * destY)
+Win (Rect winX winY w h) ii _ `getValue` Point x y =
+    (ii `I.getPixel` Point destX destY, destX * destY)
   where
     -- New coordinates with the window\'s ratio
     !destX = winX + ((x * w) `quot` windowWidth)
@@ -85,37 +95,69 @@ normalizeSum (Win _ _ distribution) standardN n s =
     normalize p = distribution ! int p
 {-# INLINE normalizeSum #-}
 
--- | Lists all windows for any positions and sizes inside an image.
-windows :: II.IntegralImage -> II.IntegralImage -> [Win]
-windows integral squaredIntegral = [ win (Rect x y w h) integral squaredIntegral
-    | sizeMult <- sizeMults
-    , let w = round $ sizeMult * fromIntegral windowWidth
-    , let h = round $ sizeMult * fromIntegral windowHeight
-    , let moveIcr' = round $ sizeMult * moveIcr
-    , x <- [0,moveIcr'..width-w]
-    , y <- [0,moveIcr'..height-h]
+-- | Returns, for the size of an image, the size of all possible windows with
+-- their associated movement increment and their number of windows 
+-- displacements on the horizontal and vertical axis possible.
+windowsSizes :: Size -> [(Size, Rational, Int, Int)]
+windowsSizes (Size width height) = [ (Size w h, moveIcr', nMovesX, nMovesY)
+    |  sizeMult <- sizeMults
+    , let w = round $ sizeMult * rational windowWidth
+    , let h = round $ sizeMult * rational windowHeight
+    , let moveIcr' = sizeMult * moveIcr
+    , let nMovesX = floor (rational (width - w) / moveIcr') + 1
+    , let nMovesY = floor (rational (height - h) / moveIcr') + 1
     ]
   where
-    sizeIncr = 1.25 :: Rational
-    moveIcr = 1.5 :: Rational
-    maxPyramDeep = 11
-    
-    Size iiWidth iiHeight = I.getSize integral
-    (width, height) = (iiWidth - 1, iiHeight - 1)
     (width', height') = (integer width, integer height)
+    -- Create a pyramid of windows with a maximum size which always equals the 
+    -- smallest side of the image.
     maxSizeMult =
         min (width' % integer windowWidth) (height' % integer windowHeight)
-    minSizeMult = max 1 (maxSizeMult / (1.25^(maxPyramDeep-1)))
+    minSizeMult = max 1 (maxSizeMult / (sizeIncr^(maxPyramDeep-1)))
     sizeMults = takeWhile (<= maxSizeMult) $ iterate (* sizeIncr) minSizeMult
+
+-- | Lists all windows for any positions and sizes inside an image using two
+-- 'IntegralImage's (normal and squared).
+windows :: II.IntegralImage -> II.IntegralImage -> [Win]
+windows ii sqii = [ win (Rect x y w h) ii sqii
+    | (Size w h, moveIcr', nMovesX, nMovesY) <- windowsSizes imageSize
+    , x <- map round $ take nMovesX $ iterate (+ moveIcr') 0
+    , y <- map round $ take nMovesY $ iterate (+ moveIcr') 0
+    ]
+  where
+    imageSize = II.originalSize ii
 {-# INLINE windows #-}
+
+randomWindows :: RandomGen g => 
+                 g -> II.IntegralImage -> II.IntegralImage -> [Win]
+randomWindows initGen ii sqii =
+    go initGen
+  where
+    go gen = 
+        let (sizeIndex, gen') = randomR (bounds sizes) gen
+            (Size w h, moveIcr', nMovesX, nMovesY) = sizes ! sizeIndex
+            (xIndex, gen'') = randomR (0, nMovesX - 1) gen'
+            x = round (rational xIndex * moveIcr')
+            (yIndex, gen''') = randomR (0, nMovesY - 1) gen''
+            y = round (rational yIndex * moveIcr')
+        in win (Rect x y w h) ii sqii : go gen'''
+    
+    sizes' = windowsSizes imageSize
+    sizes = listArray (0, length sizes' - 1) (sizes') :: Array Int (Size, Rational, Int, Int)
+    imageSize = II.originalSize ii
+    
+nWindows :: Size -> Int
+nWindows size = sum [ nMovesX * nMovesY
+    | (_, _, nMovesX, nMovesY) <- windowsSizes size
+    ]
 
 double :: Integral a => a -> Double
 double = fromIntegral
+rational :: Integral a => a -> Rational
+rational  = fromIntegral
 integer :: Integral a => a -> Integer
 integer = fromIntegral
 int :: Integral a => a -> Int
 int = fromIntegral
 int64 :: Integral a => a -> Int64
 int64 = fromIntegral
-word16 :: Integral a => a -> Word16
-word16 = fromIntegral

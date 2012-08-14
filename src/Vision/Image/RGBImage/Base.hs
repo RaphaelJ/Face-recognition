@@ -9,7 +9,7 @@ import Data.Word
 
 import Data.Array.Repa (
       Array, D, DIM3, Z (..), (:.) (..), (!), unsafeIndex, fromListUnboxed
-    , fromFunction, extent, delay
+    , computeUnboxedS, fromFunction, extent, delay
     )
 
 import qualified Vision.Image.IImage as I
@@ -27,7 +27,7 @@ data RGBPixel = RGBPixel {
 instance I.Image RGBImage RGBPixel Word8 where
     fromList size xs =
         RGBImage $ delay $ fromListUnboxed (imageShape size) $ 
-            concat [ [r, b, b] | RGBPixel r g b <- xs ]
+            concat [ [r, g, b] | RGBPixel r g b <- xs ]
     {-# INLINE fromList #-}
     
     fromFunction size f =
@@ -36,7 +36,7 @@ instance I.Image RGBImage RGBPixel Word8 where
             in case c of
                  0 -> rgbRed $ f point
                  1 -> rgbGreen $ f point
-                 2 -> rgbBlue $ f point
+                 _ -> rgbBlue $ f point
     {-# INLINE fromFunction #-}
 
     getSize (RGBImage image) =
@@ -62,15 +62,22 @@ instance I.Image RGBImage RGBPixel Word8 where
         }
     {-# INLINE unsafeGetPixel #-}
     
+    force (RGBImage image) = 
+        RGBImage $ delay $ computeUnboxedS image
+    {-# INLINE force #-}
+    
 instance I.Pixel RGBPixel Word8 where
     pixToValues (RGBPixel r g b) = [r, g, b]
     {-# INLINE pixToValues #-}
     
-    valuesToPix (r : g : b : _) = RGBPixel r g b
+    valuesToPix ~(r : g : b : _) = RGBPixel r g b
     {-# INLINE valuesToPix #-}
     
     RGBPixel r g b `pixApply` f = RGBPixel (f r) (f g) (f b)
     {-# INLINE pixApply #-}
+    
+{-# SPECIALIZE I.resize :: RGBImage -> Size -> RGBImage #-}
+{-# SPECIALIZE I.horizontalFlip :: RGBImage -> RGBImage #-}
     
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3

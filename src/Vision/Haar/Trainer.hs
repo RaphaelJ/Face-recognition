@@ -2,144 +2,130 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Vision.Haar.Trainer (
-    -- * Types & constructors
-      TrainingImage (..)
-    -- * Weak classifier selector
-    , selectHaarClassifier
     -- * Impure utilities
-    , train, classifierStats
+      train{-, classifierStats-}
     ) where
 
-import Control.Monad
-import Control.Parallel.Strategies
-import Data.Function
-import Data.Int
 import Data.List
-import Data.Ratio
-import GHC.Conc
 import System.Directory (getDirectoryContents)
-import System.FilePath (FilePath, (</>))
+import System.FilePath ((</>))
+import System.Random (mkStdGen)
 
-import AI.Learning.AdaBoost (adaBoost)
+
 import AI.Learning.Classifier (
-      TrainingTest (..), Classifier (..), StrongClassifier (..), Weight, Score
-    , splitTests, classifierScore, strongClassifierScores
-    )
-import AI.Learning.DecisionStump (
-      DecisionStump, DecisionStumpTest (..), trainDecisionStump
+      splitTests, classifierScore, strongClassifierScores
     )
 
-import Vision.Haar.Classifier (HaarClassifier (..))
-import Vision.Haar.Feature (features, compute)
-import Vision.Haar.Window (Win, win, windowWidth, windowHeight)
+import Vision.Haar.Cascade (
+      HaarCascade (..), trainHaarCascade, cascadeStats
+    )
+import Vision.Haar.Classifier (TrainingImage (..)) 
+import Vision.Haar.Window (win, windowWidth, windowHeight, randomWindows, nWindows)
 import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Size (..), Rect (..))
 
--- | Contains a training image with its 'IntegralImage'.
-data TrainingImage = TrainingImage {
-      tiWindow :: !Win, tiValid :: !Bool
-    }
-
-instance TrainingTest TrainingImage Bool where
-    tClass = tiValid
-
-instance Classifier HaarClassifier TrainingImage Bool where
-    classifier `cClassScore` image = classifier `cClassScore` tiWindow image
-
--- | Defines how the features list must be divided so only a chunk is running
--- on each core when training with parallel computing.
-chunksSize = length features `quot` numCapabilities
-
--- | Builds an 'HaarClassifier' which make the best score in classifying the set
--- of tests and weights given.
--- The classifier selection can benefit from parallel computing.
-selectHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Score)
-selectHaarClassifier ts =
-    -- Selects the best 'DecisionStump' over all features.
-    maximumBy (compare `on` snd) bestClassifiers
-  where
-    -- | Compute the best 'DecisionStump' for each feature on the set of tests,
-    -- using parallel computing.
-    bestClassifiers =
-        let strategy = evalTuple2 rseq rseq
-           -- parMap will cause a space leak because each feature will be
-           -- evaluated at the same time.
-        in map featureStump features `using` parListChunk chunksSize strategy
-    
-    -- | Trains the best 'DecisionStump' for the feature and the set of tests.
-    featureStump f =
-        let (stump, score) = trainDecisionStump Nothing [
-                  (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w)
-                | (t, w) <- ts
-                ]
-        in (HaarClassifier f stump, score)
-
 -- | Trains a strong classifier from directory of tests containing two
--- directories (bad & good).
-train :: FilePath -> Int -> FilePath -> IO ()
-train directory steps savePath = do
-    print $ length features
-    print chunksSize
+-- directories (faces & non_faces).
+train :: FilePath -> FilePath -> IO ()
+train directory savePath = do
     putStrLn "Loading images ..."
-    good <- loadGood
-    putStrLn "\tgood/ loaded"
-    bad <- loadBad
-    putStrLn "\tbad/ loaded"
-    let (trainingSet, testingSet) = splitTests (90 % 100) (good ++ bad)
-
-    putStrLn $ "Train on " ++ show (length trainingSet) ++ " image(s) ..."
-    let classifier = adaBoost (Left steps) trainingSet selectHaarClassifier
-    print classifier
-
-    classifierStats classifier testingSet
     
-    putStrLn "Save classifier ..."
-    writeFile savePath $ show classifier
+    faces <- loadFaces
+    putStrLn $ "\tfaces/ loaded (" ++ show (length faces) ++" images)"
+    
+    (nonFaces, nNonFaces, nNonFacesWindows) <- loadNonFaces
+    putStr $ "\tnon_faces/ loaded (" ++ show nNonFaces ++" images, "
+    putStrLn $ show nNonFacesWindows ++ " windows)"
+    
+    let (facesTraining, facesTesting) = splitTests 0.90 faces
+    let nFacesTraining = length facesTraining
+    let (nonFacesTesting, nonFacesTraining) = splitAt nFacesTraining nonFaces
+
+    putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
+    let !cascade = trainHaarCascade facesTraining nonFacesTraining
+    print cascade
+    
+--     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
+--     
+--     putStrLn $ "Detection rate: " ++ show detectionRate
+--     putStrLn $ "False positive rate: " ++ show falsePositiveRate
+
+--     classifierStats classifier testingSet
+    
+    putStrLn "Save cascade ..."
+    writeFile savePath $ show cascade
   where
-    loadGood = do
-        images <- loadImages (directory </> "good")
-        -- Computes the horizontal mirror for each valid image:
-        return $! trainingImages True (images ++ map I.horizontalFlip images)
-    loadBad =
-        trainingImages False `fmap` loadImages (directory </> "bad")
+    -- | Initialises a 'TrainingImage' for each image and its horizontal mirror.
+    loadFaces = do
+        -- Loads and resizes each image to the detection window\'s size.
+        let resize i = I.force $ I.resize i (Size windowWidth windowHeight)
+        imgs <- map resize `fmap` loadImages (directory </> "faces")
+        
+        -- Computes the horizontal mirror for each valid image.
+        let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
+        
+        return [ TrainingImage w True 
+            | img <- imgs'
+            , let (ii, sqii) = integralImages img
+            , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
+            ]
+    
+    -- | Returns an infinite list of random 'TrainingImage' from the non faces 
+    -- images and the number of images and different random windows.
+    loadNonFaces = do
+        imgs <- map I.force `fmap` loadImages (directory </> "non_faces") :: IO [G.GreyImage]
+        let wins = [ TrainingImage w False | w <- randomImagesWindows imgs ]
+        let nNonFaces = length imgs
+        let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
+        return (wins, nNonFaces, nNonFacesWindows)
+        
+    -- | Given a list of imgs, returns an infinite random list of windows.
+    -- The first window comes from the first image, the second window from 
+    -- the second image and so on.
+    randomImagesWindows imgs = 
+        go imgsWindows []
+      where
+        -- Consumes the list of infinite lists of windows by taking a window
+        -- from each list at a time.
+        -- > [ [a1, a2, a3 ..], [b1, b2, b3 ..], [c1, c2, c3 ..] ]
+        -- becomes:
+        -- > [ a1, b1, c1, a2, b2, c2, a3, b3, c3 .. ]
+        go []           acc =
+            go (reverse acc) []
+        go ~((x:xs):ys) acc =
+            x : go ys (xs:acc)
+        
+        -- Returns the list of the infinite random lists of windows for each 
+        -- image.
+        imgsWindows = [
+              randomWindows (mkStdGen i) ii sqii
+            | (i, img) <- zip [1..] imgs
+            , let (ii, sqii) = integralImages img
+            ]
+   
+    integralImages img =
+        let ii = II.integralImage img id
+            sqii = II.integralImage img (^(2 :: Int))
+        in (ii, sqii)
 
     loadImages dir = do
-        paths <- sort `fmap` getDirectoryContents dir
-        mapM (loadImage . (dir </>)) (excludeHidden paths)
-
-    loadImage path = do
-        img <- I.load path
-        return $! I.resize img $ Size windowWidth windowHeight
+        files <- (sort . excludeHidden) `fmap` getDirectoryContents dir
+        mapM (I.load . (dir </>)) files
 
     excludeHidden = filter (((/=) '.') . head)
 
--- | Prints the statistics of the sub classifiers of the Haar\'s cascade on a
--- set of tests.
-classifierStats :: StrongClassifier HaarClassifier -> [TrainingImage] -> IO ()
-classifierStats classifier tests = do
-    putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
-    
-    let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
-    let !cs' = cs `using` parList (evalTuple2 rseq rseq)
-    putStrLn "Sub classifiers length sorted by score:"
-    forM_ cs' $ \(StrongClassifier wcs ws, score) -> do
-        putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
-        
-    let score = classifierScore classifier tests
-    putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"
-
--- | Accepts a list of images with a boolean indicating if the image is valid.
--- Compute the 'IntegralImage' and initialises a full image 'Win' for each
--- image.
-trainingImages :: Bool -> [G.GreyImage] -> [TrainingImage]
-trainingImages isValid =
-    map trainingImage
-  where
-    rect = Rect 0 0 windowWidth windowHeight
-    trainingImage image =
-        let integral = II.integralImage image id
-            squaredIntegral = II.integralImage image (^2)
-            window = win rect integral squaredIntegral
-        in TrainingImage window isValid
+-- -- | Prints the statistics of the sub classifiers of the Haar\'s cascade on a
+-- -- set of tests.
+-- classifierStats :: HaarCascade -> [TrainingImage] -> IO ()
+-- classifierStats classifier tests = do
+--     putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
+--     
+--     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
+--     putStrLn "Sub classifiers length sorted by score:"
+--     forM_ cs $ \(StrongClassifier wcs _, score) -> do
+--         putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
+--         
+--     let score = classifierScore classifier tests
+--     putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"

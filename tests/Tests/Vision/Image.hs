@@ -30,7 +30,7 @@ instance (I.Image i p a, Arbitrary a) => Arbitrary i where
             return $ I.valuesToPix vals
 
 tests = [
-      {-testProperty "Grey to/from RGBA" $ propGreyRGBA
+      testProperty "Grey to/from RGBA" $ propGreyRGBA
     , testProperty "Grey to/from RGB" $ propGreyRGB
     , testProperty "RGB to/from RGBA" $ propRGBRGBA
     , testProperty "Image resize Grey"
@@ -39,14 +39,14 @@ tests = [
         (propImageResize :: I.RGBAImage -> Bool)
     , testProperty "Image resize RGB" 
         (propImageResize :: I.RGBImage -> Bool)
-    ,-} testProperty "Image horizontal flip Grey"
+    , testProperty "Image horizontal flip Grey"
         (propImageHorizontalFlip :: I.GreyImage -> Bool)
     , testProperty "Image horizontal flip RGBA"
         (propImageHorizontalFlip :: I.RGBAImage -> Bool)
     , testProperty "Image horizontal flip RGB" 
         (propImageHorizontalFlip :: I.RGBImage -> Bool)
---     , testProperty "Integral values" $ propIntegralPixels
---     , testProperty "Integral sumRectangle" $ propIntegralSumRectangle
+    , testProperty "Integral values" $ propIntegralPixels
+    , testProperty "Integral sumRectangle" $ propIntegralSumRectangle
     ]
 
 -- | Tests if the converts a greyscale to and from RGBA gives the same image.

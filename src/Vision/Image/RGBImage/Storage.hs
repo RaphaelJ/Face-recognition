@@ -1,7 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Image.RGBImage.Storage (
-    ) where
+module Vision.Image.RGBImage.Storage () where
 
 import Data.Array.Repa (delay, computeS)
 import qualified Data.Array.Repa.IO.DevIL as IL
@@ -9,7 +8,7 @@ import qualified Data.Array.Repa.IO.DevIL as IL
 import Data.Convertible (Convertible (..), convert)
 
 import Vision.Image.RGBImage.Base (RGBImage (..))
-import Vision.Image.RGBImage.Conversion
+import Vision.Image.RGBImage.Conversion ()
 import Vision.Image.GreyImage.Base as G
 import Vision.Image.RGBAImage.Base as R
     

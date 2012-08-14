@@ -3,14 +3,13 @@
 module Vision.Haar.Feature (
     -- * Types & constructors
       HaarFeature (..)
+    -- * Constants
+    , sizeMult, moveMult
     -- * Functions
     , compute, features, featuresPos
     ) where
     
 import Data.Int
-import Data.Ratio
-
-import Data.List
     
 import qualified Vision.Haar.Window as W
 import Vision.Primitive (Point (..), Rect (..))
@@ -22,8 +21,12 @@ data HaarFeature = TwoVertRect !Rect
                  | FourRect !Rect
     deriving (Show, Read, Eq)
 
+sizeMult, moveMult :: Int
+sizeMult = 5
+moveMult = 5
+
 compute :: HaarFeature -> W.Win -> Int64
-compute r@(TwoVertRect (Rect x y w h)) win =
+compute (TwoVertRect (Rect x y w h)) win =
     -- a ------- b
     -- -         -
     -- -   S1    -
@@ -159,6 +162,7 @@ featuresPos minWidth minHeight =
 
 -- | Lists all rectangles positions and sizes inside a rectangle of
 -- width * height.
+rectangles :: Int -> Int -> Int -> Int -> [Rect]
 rectangles minWidth minHeight width height = [ Rect x y w h 
     | x <- [0,incrX..width-minWidth]
     , y <- [0,incrY..height-minHeight]
@@ -166,15 +170,7 @@ rectangles minWidth minHeight width height = [ Rect x y w h
     , h <- [minHeight,minHeight+incrHeight..height-y]
     ]
   where
-    sizeMult = 3
-    moveMult = 3
-    
     incrX = 1 * moveMult
     incrY = 1 * moveMult
     incrWidth = minWidth * sizeMult
     incrHeight = minHeight * sizeMult
-
-integer :: (Integral a) => a -> Integer
-integer = fromIntegral
-int64 :: (Integral a) => a -> Int64
-int64 = fromIntegral

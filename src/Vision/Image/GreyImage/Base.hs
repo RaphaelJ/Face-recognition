@@ -11,7 +11,7 @@ import Data.Word
 
 import Data.Array.Repa (
       Array, D, DIM2, Z (..), (:.) (..), (!), unsafeIndex, fromListUnboxed
-    , extent, fromFunction, delay
+    , computeUnboxedS, extent, fromFunction, delay
     )
 
 import qualified Vision.Image.IImage as I
@@ -44,15 +44,22 @@ instance I.Image GreyImage Word8 Word8 where
         image `unsafeIndex` (Z :. y :. x)
     {-# INLINE unsafeGetPixel #-}  
     
+    force (GreyImage image) = 
+        GreyImage $ delay $ computeUnboxedS image
+    {-# INLINE force #-}
+    
 instance I.Pixel Word8 Word8 where
     pixToValues pix = [pix]
     {-# INLINE pixToValues #-}
     
-    valuesToPix (pix:_) = pix
+    valuesToPix ~(pix:_) = pix
     {-# INLINE valuesToPix #-}
     
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
+    
+{-# SPECIALIZE I.resize :: GreyImage -> Size -> GreyImage #-}
+{-# SPECIALIZE I.horizontalFlip :: GreyImage -> GreyImage #-}
 
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM2

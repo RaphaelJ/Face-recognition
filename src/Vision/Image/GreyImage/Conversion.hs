@@ -1,13 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Vision.Image.GreyImage.Conversion (
-    ) where
+module Vision.Image.GreyImage.Conversion () where
 
 import Data.Word
 
 import Data.Convertible (Convertible (..))
-
-import qualified Data.Array.Repa.IO.DevIL as IL
 
 import Vision.Image.IImage (fromFunction, getSize, unsafeGetPixel)
 import Vision.Image.GreyImage.Base (GreyImage (..))

@@ -16,8 +16,8 @@ module AI.Learning.Classifier (
 
 import Data.Function
 import Data.List
+import Data.List.Shuffle (shuffleList)
 import qualified Data.Map as M
-import System.Random (mkStdGen, randoms)
 
 -- | Weight between 0 and 1 of classifiers and tests.
 type Weight = Double
@@ -48,8 +48,8 @@ class TrainingTest t cl | t -> cl where
 
 -- | A 'StrongClassifier' is a trained container with a set of weak classifiers.
 -- The 'StrongClassifier' can be trained with the 'adaBoost' algorithm.
-data StrongClassifier a = StrongClassifier {
-      scClassifiers :: ![(a, Weight)] -- ^ Weak classifiers with weight
+data StrongClassifier c = StrongClassifier {
+      scClassifiers :: ![(c, Weight)] -- ^ Weak classifiers with weight
     , scTotalWeights :: !Weight
     } deriving (Show, Read)
     
@@ -83,8 +83,8 @@ instance (Classifier weak t cl, StrongClassifierClass cl) =>
 -- | Instance for binary classes.
 instance StrongClassifierClass Bool where
     StrongClassifier cs weights `scClassScore` test =
-        if trueScore > falseScore then (True, trueScore / weights)
-                                  else (False, falseScore / weights)
+        if trueScore >= falseScore then (True, trueScore / weights)
+                                   else (False, falseScore / weights)
       where
         (!trueScore, !falseScore) = foldl' step (0, 0) cs
         step (!ts, !fs) (!c, !w) =
@@ -96,9 +96,9 @@ instance StrongClassifierClass Bool where
 -- | Instance for classes with more than two states.
 instance StrongClassifierClass Int where
     StrongClassifier cs weights `scClassScore` test =
-        (cl, score / weights)
+        (bestClass, bestScore / weights)
       where
-        (!cl, !score) = maximumBy (compare `on` snd) classesScores
+        (!bestClass, !bestScore) = maximumBy (compare `on` snd) classesScores
         -- Uses a 'Map' to sum weights by classes.
         -- Gives the list of classes with score.
         classesScores = M.toList $ foldl' step M.empty cs
@@ -111,11 +111,7 @@ instance StrongClassifierClass Int where
 -- following the ratio. Unsort the list of test before the separation.
 splitTests :: Rational -> [a] -> ([a], [a]) 
 splitTests ratio ts =
-    splitAt (round $ fromIntegral (length ts) * ratio) (unsortList ts)
-  where
-    gen = mkStdGen 1
-    unsortList =
-        map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
+    splitAt (round $ fromIntegral (length ts) * ratio) (shuffleList ts)
 
 -- | Gives the score that the classifier gets on the set of tests. 
 classifierScore :: (Classifier c t cl, TrainingTest t cl, Eq cl)
@@ -127,7 +123,7 @@ classifierScore classifier ts =
 -- | Lists all sub-'StrongClassifier's possibles with the sub-sequences of 
 -- weak classifiers from the 'StrongClassifier'.
 subStrongClassifiers :: StrongClassifier a -> [StrongClassifier a]
-subStrongClassifiers (StrongClassifier cs ws) = [ StrongClassifier cs' ws 
+subStrongClassifiers (StrongClassifier cs _) = [ StrongClassifier cs' ws 
     | n <- [1..length cs]
     , let cs' = take n cs, let ws = sum (map snd cs)
     ]
