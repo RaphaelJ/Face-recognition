@@ -9,7 +9,7 @@ module Vision.Haar.Trainer (
 import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
-import System.Random (mkStdGen)
+import System.Random (mkStdGen, next)
 
 
 import AI.Learning.Classifier (
@@ -20,7 +20,9 @@ import Vision.Haar.Cascade (
       HaarCascade (..), trainHaarCascade, cascadeStats
     )
 import Vision.Haar.Classifier (TrainingImage (..)) 
-import Vision.Haar.Window (win, windowWidth, windowHeight, randomWindows, nWindows)
+import Vision.Haar.Window (
+      win, windowWidth, windowHeight, randomWindows, nWindows
+    )
 import qualified Vision.Image as I
 import qualified Vision.Image.GreyImage as G
 import qualified Vision.Image.IntegralImage as II
@@ -35,16 +37,16 @@ train directory savePath = do
     faces <- loadFaces
     putStrLn $ "\tfaces/ loaded (" ++ show (length faces) ++" images)"
     
-    (nonFaces, nNonFaces, nNonFacesWindows) <- loadNonFaces
+    (winGen, nNonFaces, nNonFacesWindows) <- loadNonFaces
     putStr $ "\tnon_faces/ loaded (" ++ show nNonFaces ++" images, "
     putStrLn $ show nNonFacesWindows ++ " windows)"
     
     let (facesTraining, facesTesting) = splitTests 0.90 faces
     let nFacesTraining = length facesTraining
-    let (nonFacesTesting, nonFacesTraining) = splitAt nFacesTraining nonFaces
 
     putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
-    let !cascade = trainHaarCascade facesTraining nonFacesTraining
+--     let !cascade = trainHaarCascade facesTraining winGen
+    let !cascade = trainHaarCascade facesTraining winGen
     print cascade
     
 --     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
@@ -76,15 +78,19 @@ train directory savePath = do
     -- images and the number of images and different random windows.
     loadNonFaces = do
         imgs <- map I.force `fmap` loadImages (directory </> "non_faces") :: IO [G.GreyImage]
-        let wins = [ TrainingImage w False | w <- randomImagesWindows imgs ]
+--         let winGen gen = [ 
+--                 TrainingImage w False | w <- randomImagesWindows imgs gen 
+--                 ]
+        let (ii, sqii) = integralImages (head imgs)
+        let winGen gen = map (flip TrainingImage False) $ randomWindows gen ii sqii
         let nNonFaces = length imgs
         let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
-        return (wins, nNonFaces, nNonFacesWindows)
+        return (winGen, nNonFaces, nNonFacesWindows)
         
     -- | Given a list of imgs, returns an infinite random list of windows.
     -- The first window comes from the first image, the second window from 
     -- the second image and so on.
-    randomImagesWindows imgs = 
+    randomImagesWindows imgs gen = 
         go imgsWindows []
       where
         -- Consumes the list of infinite lists of windows by taking a window
@@ -100,10 +106,12 @@ train directory savePath = do
         -- Returns the list of the infinite random lists of windows for each 
         -- image.
         imgsWindows = [
-              randomWindows (mkStdGen i) ii sqii
+              randomWindows (mkStdGen $ randomVal * i) ii sqii
             | (i, img) <- zip [1..] imgs
             , let (ii, sqii) = integralImages img
             ]
+        
+        randomVal = fst $ next gen
    
     integralImages img =
         let ii = II.integralImage img id

@@ -33,7 +33,6 @@ data Win = Win {
     -- 
     -- > wDistibution win ! x
     , wDistibution :: {-# UNPACK #-} !(UArray Int Double)
---     , wDistibution :: UArray Int Double
     }
 
 -- | Default window\'s size.
@@ -133,18 +132,19 @@ randomWindows :: RandomGen g =>
 randomWindows initGen ii sqii =
     go initGen
   where
-    go gen = 
-        let (sizeIndex, gen') = randomR (bounds sizes) gen
-            (Size w h, moveIcr', nMovesX, nMovesY) = sizes ! sizeIndex
-            (xIndex, gen'') = randomR (0, nMovesX - 1) gen'
-            x = round (rational xIndex * moveIcr')
-            (yIndex, gen''') = randomR (0, nMovesY - 1) gen''
-            y = round (rational yIndex * moveIcr')
+    go !gen = 
+        let (!sizeIndex, !gen') = randomR (bounds sizes) gen
+            (!Size w h, !moveIcr', !nMovesX, !nMovesY) = sizes ! sizeIndex
+            (!xIndex, !gen'') = randomR (0, nMovesX - 1) gen'
+            !x = round (rational xIndex * moveIcr')
+            (!yIndex, !gen''') = randomR (0, nMovesY - 1) gen''
+            !y = round (rational yIndex * moveIcr')
         in win (Rect x y w h) ii sqii : go gen'''
     
     sizes' = windowsSizes imageSize
     sizes = listArray (0, length sizes' - 1) (sizes') :: Array Int (Size, Rational, Int, Int)
     imageSize = II.originalSize ii
+-- {-# INLINE randomWindows #-}
     
 nWindows :: Size -> Int
 nWindows size = sum [ nMovesX * nMovesY
