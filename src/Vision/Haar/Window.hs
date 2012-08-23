@@ -133,12 +133,12 @@ randomWindows initGen ii sqii =
     go initGen
   where
     go !gen = 
-        let (!sizeIndex, !gen') = randomR (bounds sizes) gen
-            (!Size w h, !moveIcr', !nMovesX, !nMovesY) = sizes ! sizeIndex
-            (!xIndex, !gen'') = randomR (0, nMovesX - 1) gen'
-            !x = round (rational xIndex * moveIcr')
-            (!yIndex, !gen''') = randomR (0, nMovesY - 1) gen''
-            !y = round (rational yIndex * moveIcr')
+        let (sizeIndex, gen') = randomR (bounds sizes) gen
+            (Size w h, moveIcr', nMovesX, nMovesY) = sizes ! sizeIndex
+            (xIndex, gen'') = randomR (0, nMovesX - 1) gen'
+            x = round (rational xIndex * moveIcr')
+            (yIndex, gen''') = randomR (0, nMovesY - 1) gen''
+            y = round (rational yIndex * moveIcr')
         in win (Rect x y w h) ii sqii : go gen'''
     
     sizes' = windowsSizes imageSize

@@ -14,7 +14,7 @@ module Vision.Haar.Cascade (
 import Data.List
 import Data.Ratio
 import Control.DeepSeq (NFData (), rnf, force)
-import System.Random (RandomGen, StdGen, mkStdGen)
+import System.Random (RandomGen, StdGen, mkStdGen, next)
 
 import Debug.Trace
 
@@ -98,24 +98,21 @@ stageMinDetection = 0.995
 
 trainHaarCascade :: [TrainingImage] -> (StdGen -> [TrainingImage]) -> HaarCascade
 trainHaarCascade valid invalidGen =
-    trainCascade (HaarCascade []) 1
+    trainCascade (HaarCascade []) 1 (mkStdGen 1)
   where
     !nValid = length valid
     
-    trainCascade (HaarCascade ss) falsePositive =
+    trainCascade (HaarCascade ss) falsePositive gen =
 --         let !invalid'' = force $ take nValid invalid'
-        let {-# INLINE classify #-}
-            classify i = 
-                let !r = HaarCascade ss `cClass` i in r 
-            invalid = traceShow (wRect $ tiWindow $ (invalidGen (mkStdGen 1)) !! 1000000000) $ take nValid $ filter (HaarCascade ss `cClass`) (invalidGen (mkStdGen 1))
+        let invalid = force $ take nValid $ filter (HaarCascade ss `cClass`) (invalidGen gen)
             sc = tail $ adaBoost (invalid ++ valid) trainHaarClassifier
-            (stage, stageFalsePositive) = trainStage sc invalid
+            (!stage, !stageFalsePositive) = trainStage sc invalid
             falsePositive' = falsePositive * stageFalsePositive
             !cascade = HaarCascade (stage : ss)
 --             !invalid''' = filter (stage `cClass`) invalid'
         in if trace ("New classifier - " ++ show (length $ scClassifiers $ hcsClassifier $ stage) ++ " features") $ falsePositive' > maxFalsePositive
               -- Add a new stage if the false detection rate is too high.
-              then trainCascade cascade falsePositive'
+              then trainCascade cascade falsePositive' (snd $ next gen)
               else cascade
     
     trainStage ~(sc:scs) invalid' =
