@@ -78,11 +78,10 @@ train directory savePath = do
     -- images and the number of images and different random windows.
     loadNonFaces = do
         imgs <- map I.force `fmap` loadImages (directory </> "non_faces") :: IO [G.GreyImage]
---         let winGen gen = [ 
---                 TrainingImage w False | w <- randomImagesWindows imgs gen 
---                 ]
-        let (ii, sqii) = integralImages (head imgs)
-        let winGen gen = map (flip TrainingImage False) $ randomWindows gen ii sqii
+        let iimgs = map integralImages imgs
+        let winGen gen = [ 
+                TrainingImage w False | w <- randomImagesWindows iimgs gen 
+                ]
         let nNonFaces = length imgs
         let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
         return (winGen, nNonFaces, nNonFacesWindows)
@@ -90,7 +89,7 @@ train directory savePath = do
     -- | Given a list of imgs, returns an infinite random list of windows.
     -- The first window comes from the first image, the second window from 
     -- the second image and so on.
-    randomImagesWindows imgs gen = 
+    randomImagesWindows iimgs gen = 
         go imgsWindows []
       where
         -- Consumes the list of infinite lists of windows by taking a window
@@ -107,8 +106,7 @@ train directory savePath = do
         -- image.
         imgsWindows = [
               randomWindows (mkStdGen $ randomVal * i) ii sqii
-            | (i, img) <- zip [1..] imgs
-            , let (ii, sqii) = integralImages img
+            | (i, (ii, sqii)) <- zip [1..] iimgs
             ]
         
         randomVal = fst $ next gen

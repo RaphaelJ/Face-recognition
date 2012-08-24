@@ -103,14 +103,12 @@ trainHaarCascade valid invalidGen =
     !nValid = length valid
     
     trainCascade (HaarCascade ss) falsePositive gen =
---         let !invalid'' = force $ take nValid invalid'
-        let invalid = force $ take nValid $ filter (HaarCascade ss `cClass`) (invalidGen gen)
+        let !invalid = force $ take nValid $ filter (HaarCascade ss `cClass`) (invalidGen gen)
             sc = tail $ adaBoost (invalid ++ valid) trainHaarClassifier
             (!stage, !stageFalsePositive) = trainStage sc invalid
             falsePositive' = falsePositive * stageFalsePositive
             !cascade = HaarCascade (stage : ss)
---             !invalid''' = filter (stage `cClass`) invalid'
-        in if trace ("New classifier - " ++ show (length $ scClassifiers $ hcsClassifier $ stage) ++ " features") $ falsePositive' > maxFalsePositive
+        in if traceShow ("New classifier - " ++ show (length $ scClassifiers $ hcsClassifier $ stage) ++ " features", falsePositive') $ falsePositive' > maxFalsePositive
               -- Add a new stage if the false detection rate is too high.
               then trainCascade cascade falsePositive' (snd $ next gen)
               else cascade
