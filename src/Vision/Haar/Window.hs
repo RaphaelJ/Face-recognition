@@ -95,8 +95,8 @@ normalizeSum (Win _ _ distribution) standardN n s =
 {-# INLINE normalizeSum #-}
 
 -- | Returns, for the size of an image, the size of all possible windows with
--- their associated movement increment and their number of windows 
--- displacements on the horizontal and vertical axis possible.
+-- their associated movement increment and their number of possible windows 
+-- displacements on the horizontal and vertical axis.
 windowsSizes :: Size -> [(Size, Rational, Int, Int)]
 windowsSizes (Size width height) = [ (Size w h, moveIcr', nMovesX, nMovesY)
     |  sizeMult <- sizeMults
@@ -127,6 +127,7 @@ windows ii sqii = [ win (Rect x y w h) ii sqii
     imageSize = II.originalSize ii
 {-# INLINE windows #-}
 
+-- | Generates an infinite list of random windows from the integral images.
 randomWindows :: RandomGen g => 
                  g -> II.IntegralImage -> II.IntegralImage -> [Win]
 randomWindows initGen ii sqii =
@@ -141,11 +142,14 @@ randomWindows initGen ii sqii =
             y = round (rational yIndex * moveIcr')
         in win (Rect x y w h) ii sqii : go gen'''
     
+    sizes :: Array Int (Size, Rational, Int, Int)
+    sizes = listArray (0, length sizes' - 1) sizes'
+    
     sizes' = windowsSizes imageSize
-    sizes = listArray (0, length sizes' - 1) (sizes') :: Array Int (Size, Rational, Int, Int)
     imageSize = II.originalSize ii
 -- {-# INLINE randomWindows #-}
-    
+
+-- | Returns the number of different windows in an image of the given size.
 nWindows :: Size -> Int
 nWindows size = sum [ nMovesX * nMovesY
     | (_, _, nMovesX, nMovesY) <- windowsSizes size

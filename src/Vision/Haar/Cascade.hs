@@ -102,8 +102,8 @@ trainHaarCascade valid invalidGen =
   where
     !nValid = length valid
     
-    -- Trains the cascade by adding a new stage until the false detection
-    -- rate is too high.
+    -- Trains the cascade by adding a new stage until the false detection rate
+    -- is too high.
     trainCascade cascade falsePositive gen =
         let -- Selects a new set of invalid tests which are incorrectly detected
             -- as faces by the current cascade.
