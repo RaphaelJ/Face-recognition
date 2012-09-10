@@ -98,49 +98,63 @@ stageMinDetection = 0.995
 
 trainHaarCascade :: [TrainingImage] -> (StdGen -> [TrainingImage]) -> HaarCascade
 trainHaarCascade valid invalidGen =
-    trainCascade (HaarCascade []) 1 (mkStdGen 1)
+    trainCascade (HaarCascade []) 1.0 (mkStdGen 1)
   where
     !nValid = length valid
     
-    trainCascade (HaarCascade ss) falsePositive gen =
-        let !invalid = force $ take nValid $ filter (HaarCascade ss `cClass`) (invalidGen gen)
+    -- Trains the cascade by adding a new stage until the false detection
+    -- rate is too high.
+    trainCascade cascade falsePositive gen =
+        let -- Selects a new set of invalid tests which are incorrectly detected
+            -- as faces by the current cascade.
+            !invalid = force $ take nValid $ filter (cascade `cClass`) (invalidGen gen)
+            
+            -- Trains the new stage with the set of tests.
             sc = tail $ adaBoost (invalid ++ valid) trainHaarClassifier
             (!stage, !stageFalsePositive) = trainStage sc invalid
             falsePositive' = falsePositive * stageFalsePositive
-            !cascade = HaarCascade (stage : ss)
+            !cascade' = HaarCascade (hcaStages cascade ++ [stage])
         in if traceShow ("New classifier - " ++ show (length $ scClassifiers $ hcsClassifier $ stage) ++ " features", falsePositive') $ falsePositive' > maxFalsePositive
               -- Add a new stage if the false detection rate is too high.
-              then trainCascade cascade falsePositive' (snd $ next gen)
-              else cascade
+              then trainCascade cascade' falsePositive' (snd $ next gen)
+              else cascade'
     
+    -- Trains a stage of the cascade by adding a new weak classifier to the 
+    -- the stage\'s 'StrongClassifier' until the stage meets the required level
+    -- of false detection.
+    -- For each new weak classifier, decrease the threshold of the 
+    -- 'StrongClassifier' until the stage reaches the minimum level of 
+    -- detection.
     trainStage ~(sc:scs) invalid' =
-        let -- Faces scores, sorted, descending.
-            !scores = reverse $ sort $ map (faceConfidence sc) valid
+        let -- Valid faces scores, sorted, descending.
+            scores = reverse $ sort $ map (faceConfidence sc) valid
             
-            !groupedScores = [ (head s, length s) | s <- group scores ]
+            groupedScores = [ (head s, length s) | s <- group scores ]
             
-            -- Number of not detected valid for each threshold.
-            !thresholdsNotDetected = 
+            -- Number of not detected valid tests for each threshold.
+            thresholdsNotDetected = 
                 let infinity = 1/0 
-                    -- With an infinite threshold, each face is not detected.
+                    -- Starts with an infinite threshold so each face is not 
+                    -- detected.
                 in scanl step (infinity, nValid) groupedScores
             step (_, !nNotDetected) (!thres, !nDetected) =
                 (thres, nNotDetected - nDetected)
             
             -- Detection rates (score between 0 and 1) for each threshold.
-            !thresholdsRate = [ (thres, rate)
+            thresholdsRate = [ (thres, rate)
                 | (thres, nNotDetected) <- thresholdsNotDetected
                 , let rate = integer (nValid - nNotDetected) % integer nValid
                 ]
             
+            -- Find the first threshold which reaches the required minimum
+            -- detection rate.
             Just (!threshold, !rate) = 
                 find ((>= stageMinDetection) . snd) thresholdsRate
             
             !stage = HaarCascadeStage sc threshold
             
             !nFalsePositive = length $ filter (stage `cClass`) invalid'
-            !falsePositive = integer nFalsePositive % integer (length invalid')
-            -- nInvalid -- nTests 
+            !falsePositive = integer nFalsePositive % integer nValid
         in traceShow (threshold, length invalid', fromIntegral (numerator rate) / fromIntegral (denominator rate), fromIntegral (numerator falsePositive) / fromIntegral (denominator falsePositive)) (if falsePositive > stageMaxFalsePositive
               -- Add a new weak classifier if the false positive rate is too
               -- high.
