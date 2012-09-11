@@ -10,7 +10,6 @@ module Vision.Image (
     , module Vision.Image.RGBImage
     ) where
 
-import Vision.Primitive
 import Vision.Image.IImage
 import Vision.Image.GreyImage
 import Vision.Image.RGBAImage

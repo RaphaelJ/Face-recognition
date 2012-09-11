@@ -66,7 +66,7 @@ propRGBRGBA image =
 
 -- | Tests if by increasing the size of the image by a factor of two and
 -- reduce by two gives the original image.
-propImageResize :: (Eq i, I.Image i p a) => i -> Bool
+propImageResize :: (Eq i, I.Image i p a, Integral a) => i -> Bool
 propImageResize image =
     let size@(Size w h) = I.getSize image
     in image == I.resize (I.resize image (Size (w * 2) (h * 2))) size

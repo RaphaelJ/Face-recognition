@@ -1,6 +1,6 @@
 module Vision.Primitive (
     -- * Types & constructors
-      Point (..), Size (..), Rect (..)
+      Point (..), DPoint (..), Size (..), Rect (..)
     -- * Utilities
     , sizeBounds, sizeRange
     ) where
@@ -9,6 +9,10 @@ import Data.Ix
 
 data Point = Point { 
       pX :: {-# UNPACK #-} !Int, pY :: {-# UNPACK #-} !Int
+    } deriving (Show, Read, Eq, Ord)
+
+data DPoint = DPoint {
+      dpX :: {-# UNPACK #-} !Double, dpY :: {-# UNPACK #-} !Double
     } deriving (Show, Read, Eq, Ord)
     
 instance Ix Point where

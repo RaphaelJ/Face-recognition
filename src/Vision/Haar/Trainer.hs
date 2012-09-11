@@ -46,7 +46,8 @@ train directory savePath = do
 
     putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
 --     let !cascade = trainHaarCascade facesTraining winGen
-    let !cascade = trainHaarCascade facesTraining winGen
+--     let !cascade = trainHaarCascade facesTraining (mkStdGen 1) winGen
+    let !cascade = trainHaarCascade facesTraining (winGen $ mkStdGen 1)
     print cascade
     
 --     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
@@ -68,19 +69,18 @@ train directory savePath = do
         -- Computes the horizontal mirror for each valid image.
         let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
         
-        return [ TrainingImage w True 
-            | img <- imgs'
+        return [ TrainingImage w True | img <- imgs'
             , let (ii, sqii) = integralImages img
             , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
             ]
     
-    -- | Returns an infinite list of random 'TrainingImage' from the non faces 
+    -- | Returns an generator of random 'TrainingImage' from the non faces 
     -- images and the number of images and different random windows.
     loadNonFaces = do
-        imgs <- map I.force `fmap` loadImages (directory </> "non_faces") :: IO [G.GreyImage]
+        imgs <- map I.force `fmap` loadImages (directory </> "non_faces")
         let iimgs = map integralImages imgs
-        let winGen gen = [ 
-                TrainingImage w False | w <- randomImagesWindows iimgs gen 
+        let winGen gen = [ TrainingImage w False 
+                | w <- randomImagesWindows iimgs gen 
                 ]
         let nNonFaces = length imgs
         let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
@@ -104,8 +104,7 @@ train directory savePath = do
         
         -- Returns the list of the infinite random lists of windows for each 
         -- image.
-        imgsWindows = [
-              randomWindows (mkStdGen $ randomVal * i) ii sqii
+        imgsWindows = [ randomWindows (mkStdGen $ randomVal * i) ii sqii
             | (i, (ii, sqii)) <- zip [1..] iimgs
             ]
         

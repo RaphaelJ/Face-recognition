@@ -62,5 +62,5 @@ findConnected r = do
             overlapS = (x2 - x1) * (y2 - y1)
         in x2 > x1 && y2 > y1 && (integer overlapS % integer minS) >= minOverlap
 
-integer :: (Integral a) => a -> Integer
+integer :: Integral a => a -> Integer
 integer = fromIntegral

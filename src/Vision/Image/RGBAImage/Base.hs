@@ -35,10 +35,10 @@ instance I.Image RGBAImage RGBAPixel Word8 where
         RGBAImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
             let point = Point x y
             in case c of
-                 0 -> rgbaRed $ f point
-                 1 -> rgbaGreen $ f point
-                 2 -> rgbaBlue $ f point
-                 3 -> rgbaAlpha $ f point
+                 0  -> rgbaRed $ f point
+                 1  -> rgbaGreen $ f point
+                 2  -> rgbaBlue $ f point
+                 ~3 -> rgbaAlpha $ f point
     {-# INLINE fromFunction #-}
 
     getSize (RGBAImage image) =

@@ -17,7 +17,9 @@ module Vision.Image.IImage (
 
 import Data.Convertible (Convertible (..), convert)
 
-import Vision.Primitive (Point (..), Size (..), Rect (..), sizeRange)
+import Vision.Primitive (
+      Point (..), DPoint (..), Size (..), Rect (..), sizeRange
+    )
 
 import qualified Data.Array.Repa.IO.DevIL as IL
 
@@ -98,32 +100,33 @@ instance (Convertible IL.Image i, Convertible i IL.Image)
 -- -        -
 -- s ------ t
 bilinearInterpol, unsafeBilinearInterpol 
-    :: (Pixel p a, Image i p a, Integral a) 
-    => i -> (Double, Double) -> p
-i `bilinearInterpol` (x, y) = 
+    :: (Image i p a, Integral a) => i -> DPoint -> p
+i `bilinearInterpol` p@(DPoint x y) = 
     if x >= 0 && y >= 0 && x < fromIntegral w && y < fromIntegral h
-       then i `unsafeBilinearInterpol` (x, y)
+       then i `unsafeBilinearInterpol` p
        else error "Invalid index"
   where
     Size w h = getSize i
 
 -- | Uses a bilinear interpolation without checking bounds.
-i `unsafeBilinearInterpol` (x, y) =
+i `unsafeBilinearInterpol` DPoint x y =
     valuesToPix $ interpolateChannels qs rs ss ts
   where
     (x1, y1) = (truncate x, truncate y)
     (x2, y2) = (x1 + 1, y1 + 1)
     (d_x1, d_y1, d_x2, d_y2) =
-        (fromIntegral x1, fromIntegral y1, fromIntegral x2, fromIntegral y2)
-    interpolate q r s t =
-        let (q', r') = (fromIntegral q, fromIntegral r)
-            (s', t') = (fromIntegral s, fromIntegral t)
-        in round $
-              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y) 
-            + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
+        (double x1, double y1, double x2, double y2)
+        
+    -- Interpolate each channel of the four pixels.
     interpolateChannels []        _       _        _        = []
     interpolateChannels ~(q:qs') ~(r:rs') ~(s:ss') ~(t:ts') =
         interpolate q r s t : interpolateChannels qs' rs' ss' ts'
+    interpolate q r s t =
+        let (q', r') = (double q, double r)
+            (s', t') = (double s, double t)
+        in round $
+              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y) 
+            + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
     
     qs = pixToValues $ i `unsafeGetPixel` Point x1 y1
     rs = pixToValues $ i `unsafeGetPixel` Point x2 y1
@@ -132,15 +135,17 @@ i `unsafeBilinearInterpol` (x, y) =
 {-# INLINE bilinearInterpol #-}
 {-# INLINE unsafeBilinearInterpol #-}
     
--- | Resizes the 'Image' using the nearest-neighbour interpolation.
-resize :: Image i p a => i -> Size -> i
+-- | Resizes the 'Image' using a bilinear interpolation.
+resize :: (Image i p a, Integral a) => i -> Size -> i
 resize image size'@(Size w' h') =
     fromFunction size' $ \(Point x' y') ->
-        let x = x' * w `quot` w'
-            y = y' * h `quot` h'
-        in image `unsafeGetPixel` Point x y
+        let x = double x' * widthRatio
+            y = double y' * heightRatio
+        in image `unsafeBilinearInterpol` DPoint x y
   where
     Size w h = getSize image
+    widthRatio = double w / double w'
+    heightRatio = double h / double h'
 {-# INLINABLE resize #-} -- With INLINABLE, the function can be specialised.
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.
@@ -170,9 +175,12 @@ drawRectangle image back border (Rect rx ry rw rh) =
 horizontalFlip :: Image i p a => i -> i
 horizontalFlip image =
     fromFunction (getSize image) $ \(Point x' y) ->
-        let !x = maxX - x'
+        let x = maxX - x'
         in image `unsafeGetPixel` Point x y
   where
     Size w _ = getSize image
-    !maxX = w - 1
+    maxX = w - 1
 {-# INLINABLE horizontalFlip #-}
+
+double :: Integral a => a -> Double
+double = fromIntegral
