@@ -18,7 +18,7 @@ main = do
             
             forM_ (zip [1..] paths) $ \(i, path) -> do
                 image <- I.load (inputDir </> path) :: IO I.GreyImage
-                let outPath = show (i :: Int) ++ ".png"
+                let outPath = show (i :: Int) ++ ".jpg"
                 
                 putStrLn $ path ++ " -> " ++ outPath
                 
