@@ -9,12 +9,13 @@ module Vision.Image.IntegralImage (
 
 import Control.Monad
 import Control.Monad.ST (ST)
-import Data.Array.MArray (newArray, readArray, writeArray)
-import Data.Array.ST (STUArray, runSTUArray)
-import Data.STRef (newSTRef, readSTRef, modifySTRef)
 
 import Data.Array.IArray ((!), listArray, bounds)
+import Data.Array.MArray (newArray, readArray, writeArray)
+import Data.Array.ST (STUArray, runSTUArray)
 import Data.Array.Unboxed (UArray)
+import Data.STRef (newSTRef, readSTRef, modifySTRef)
+
 import Data.Int
 
 import qualified Vision.Image.IImage as I
@@ -101,10 +102,10 @@ sumRectangle ii (Rect x y w h) =
     -- -    S    -
     -- -         -
     -- c ------- d
-    let a = ii `I.getPixel` Point x y
-        b = ii `I.getPixel` Point (x+w) y
-        c = ii `I.getPixel` Point x (y+h)
-        d = ii `I.getPixel` Point (x+w) (y+h)
+    let a = ii `I.unsafeGetPixel` Point x y
+        b = ii `I.unsafeGetPixel` Point (x+w) y
+        c = ii `I.unsafeGetPixel` Point x (y+h)
+        d = ii `I.unsafeGetPixel` Point (x+w) (y+h)
     in d + a - b - c
 {-# INLINE sumRectangle #-}
 

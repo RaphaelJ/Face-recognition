@@ -6,18 +6,18 @@ module Vision.Haar.Trainer (
       train{-, classifierStats-}
     ) where
 
+import Control.Monad
 import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import System.Random (mkStdGen, next)
 
-
 import AI.Learning.Classifier (
-      splitTests, classifierScore, strongClassifierScores
+      StrongClassifier (..), splitTests, classifierScore, strongClassifierScores
     )
 
 import Vision.Haar.Cascade (
-      HaarCascade (..), trainHaarCascade, cascadeStats
+      HaarCascade (..), HaarCascadeStage (..), trainHaarCascade, cascadeStats
     )
 import Vision.Haar.Classifier (TrainingImage (..)) 
 import Vision.Haar.Window (
@@ -45,10 +45,13 @@ train directory savePath = do
     let nFacesTraining = length facesTraining
 
     putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
---     let !cascade = trainHaarCascade facesTraining winGen
---     let !cascade = trainHaarCascade facesTraining (mkStdGen 1) winGen
-    let !cascade = trainHaarCascade facesTraining (winGen $ mkStdGen 1)
-    print cascade
+    let cascade = trainHaarCascade facesTraining winGen (mkStdGen 1)
+    
+    -- Prints the stages of the cascade at the same time they are computed.
+    forM_ (hcaStages cascade) $ \s -> do
+        let nClassifiers = length $ scClassifiers $ hcsClassifier s
+        putStrLn $ "New stage: " ++ show nClassifiers ++ " classifiers"
+        print s
     
 --     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
 --     

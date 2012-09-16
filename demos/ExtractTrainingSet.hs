@@ -1,13 +1,16 @@
 import Control.Monad
-import System.Directory (getDirectoryContents)
+import Data.ByteString.Lazy.Char8 (pack)
+import Data.Digest.Pure.SHA (sha1)
+import System.Directory (getDirectoryContents, doesFileExist)
 import System.Environment (getArgs)
 import System.FilePath ((</>))
 
+import Vision.Haar.Window (nWindows)
 import qualified Vision.Image as I
 import Vision.Primitive (Size (..))
 
 maxSize :: Int
-maxSize = 640
+maxSize = 800
 
 main :: IO ()
 main = do
@@ -16,16 +19,29 @@ main = do
         [inputDir, outputDir] -> do
             paths <- excludeHidden `fmap` getDirectoryContents inputDir
             
-            forM_ (zip [1..] paths) $ \(i, path) -> do
-                image <- I.load (inputDir </> path) :: IO I.GreyImage
-                let outPath = show (i :: Int) ++ ".png"
+            sizes <- forM paths $ \path -> do
+                let hash = sha1 $ pack path
+                let outPath = show hash ++ ".png"
                 
-                putStrLn $ path ++ " -> " ++ outPath
+                exists <- doesFileExist $ outputDir </> outPath
                 
-                I.save (resizeImage image) (outputDir </> outPath)
+                if not exists then do
+                    image <- I.load (inputDir </> path) :: IO I.GreyImage
+                    let image' = resizeImage image
+                    I.save image' (outputDir </> outPath)
+                    putStrLn $ path ++ " -> " ++ outPath
+                    return $ I.getSize image'
+                else do
+                    putStrLn $ path ++ " -> " ++ outPath ++ " (exists)"
+                    image' <- I.load (outputDir </> outPath) :: IO I.GreyImage
+                    return $ I.getSize image'
+            
+            putStrLn $ show (length paths) ++ " images(s)"
+            
+            putStrLn $ show (sum $ map nWindows sizes) ++ " window(s)"
         _ -> do
             putStrLn "Prepares images to be used by the HaarTrainer (converts"
-            putStrLn "images to grey scale and limit reselution)."
+            putStrLn "images to grey scale and limits resolution)."
             putStrLn "Usage: ExtractTrainingSet <input dir> <output dir>"
   where
     excludeHidden = filter (((/=) '.') . head)

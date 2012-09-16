@@ -32,7 +32,7 @@ caseAdaBoost = do
     let score = classifierScore classifier testing
     putStrLn $ "AdaBoost performance is " ++ show (score * 100) ++ "%"
     
-    assertBool "AdaBoost performance is less than 65%" (score > 0.65)
+    assertBool "AdaBoost performance is less than 70%" (score > 0.70)
 
 data BupaTestCase = BupaTestCase {
       bupaMcv :: Int, bupaAlkphos :: Int, bupaSgpt :: Int, bupaSgot :: Int

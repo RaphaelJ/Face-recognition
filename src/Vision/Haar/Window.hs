@@ -4,7 +4,7 @@ module Vision.Haar.Window (
     -- * Types & constructors
       Win (..), win
     -- * Constants
-    , windowWidth, windowHeight, sizeIncr, moveIcr, maxPyramDeep
+    , windowWidth, windowHeight, sizeIncr, moveIncr, maxPyramDeep
     -- * Functions
     , getValue, normalizeSum, windows, randomWindows, nWindows
     ) where
@@ -13,6 +13,7 @@ import Data.Array (Array)
 import Data.Array.IArray (bounds, listArray, (!))
 import Data.Array.Unboxed (UArray)
 import Data.Int
+import Data.List
 import Data.Ratio
 import System.Random (RandomGen, randomR)
 
@@ -20,10 +21,10 @@ import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Point (..), Size (..), Rect (..))
 
--- | Used as a structure to iterate an image.
+-- | Used as a structure to iterate an image and compute features values.
 data Win = Win {
       wRect :: {-# UNPACK #-} !Rect
-    , wIntegral :: {-# UNPACK #-} !II.IntegralImage 
+    , wIntegral :: !II.IntegralImage
     -- | Values ([0;255]) of the cumulative normal distribution for each 
     -- pixels values ([0; 255]) based on the average and the standard derivation
     -- of the 'Win' pixels values.
@@ -32,7 +33,7 @@ data Win = Win {
     -- value of the pixel of value @x@ in the equalised distribution:
     -- 
     -- > wDistibution win ! x
-    , wDistibution :: {-# UNPACK #-} !(UArray Int Double)
+    , wDistibution :: !(UArray Int Float)
     }
 
 -- | Default window\'s size.
@@ -40,10 +41,12 @@ windowWidth, windowHeight :: Int
 windowWidth = 24
 windowHeight = 24
 
--- | Defines how the algorithm iterate the window on the image. 
-sizeIncr, moveIcr :: Rational
+-- | Defines how the algorithm iterates the window on the image. 
+-- Increments the size by sizeIncr and moves the windows by moveIncr * the 
+-- current sizeIncr of the window.
+sizeIncr, moveIncr :: Rational
 sizeIncr = 1.25
-moveIcr = 1.5
+moveIncr = 1.5
 
 -- | Defines how large will be the smallest windows.
 maxPyramDeep :: Int
@@ -57,26 +60,29 @@ win rect@(Rect _ _ w h) ii sqii =
   where
     avg = valuesSum / n
     sig = max 1 $ sqrt $ (squaresSum / n) - avg^(2 :: Int)
-    n = double $ w * h
-    valuesSum = double $ II.sumRectangle ii rect
-    squaresSum = double $ II.sumRectangle sqii rect
+    n = float $ w * h
+    valuesSum = float $ II.sumRectangle ii rect
+    squaresSum = float $ II.sumRectangle sqii rect
     
     -- The normal distribution of the window
-    !a = 1 / (sig * sqrt (2 * pi)) -- Precompute some terms
-    !b = 2 * sig^(2 :: Int)
-    normal x = a * exp (-(x - avg)^(2 :: Int) / b)
+    !sqrt2Pi = 2.5066282746310002 -- Precomputes some terms
+    !a = 1 / (sig * sqrt2Pi)
+    !b = -1 / (2 * sig^(2 :: Int))
+    normal x = a * exp ((x - avg)^(2 :: Int) * b)
     
     -- The accumulative function of the normal distribution
-    distribution =
-        tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
-{-# INLINE win #-}
+    -- distribution = tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
+    distribution = go 0 0
+    go acc x | x > 255   = []
+             | otherwise = let acc' = acc + normal x * 255 
+                           in acc' : go acc' (x + 1)
 
 -- | Gets the value of a point (in default window coordinates) inside a window.
 getValue :: Win -> Point -> (Int64, Int)
 Win (Rect winX winY w h) ii _ `getValue` Point x y =
     (ii `I.getPixel` Point destX destY, destX * destY)
   where
-    -- New coordinates with the window\'s ratio
+    -- New coordinates taking care of the window\'s ratio
     !destX = winX + ((x * w) `quot` windowWidth)
     !destY = winY + ((y * h) `quot` windowHeight)
 {-# INLINE getValue #-}
@@ -89,7 +95,7 @@ Win (Rect winX winY w h) ii _ `getValue` Point x y =
 -- can be compared.
 normalizeSum :: Win -> Int -> Int -> Int64 -> Int64
 normalizeSum (Win _ _ distribution) standardN n s =
-    round $ double standardN * normalize (s `quot` int64 n)
+    round $ float standardN * normalize (s `quot` int64 n)
   where
     normalize p = distribution ! int p
 {-# INLINE normalizeSum #-}
@@ -98,13 +104,13 @@ normalizeSum (Win _ _ distribution) standardN n s =
 -- their associated movement increment and their number of possible windows 
 -- displacements on the horizontal and vertical axis.
 windowsSizes :: Size -> [(Size, Rational, Int, Int)]
-windowsSizes (Size width height) = [ (Size w h, moveIcr', nMovesX, nMovesY)
+windowsSizes (Size width height) = [ (Size w h, moveIncr', nMovesX, nMovesY)
     |  sizeMult <- sizeMults
     , let w = round $ sizeMult * rational windowWidth
     , let h = round $ sizeMult * rational windowHeight
-    , let moveIcr' = sizeMult * moveIcr
-    , let nMovesX = floor (rational (width - w) / moveIcr') + 1
-    , let nMovesY = floor (rational (height - h) / moveIcr') + 1
+    , let moveIncr' = sizeMult * moveIncr
+    , let nMovesX = floor (rational (width - w) / moveIncr') + 1
+    , let nMovesY = floor (rational (height - h) / moveIncr') + 1
     ]
   where
     (width', height') = (integer width, integer height)
@@ -119,9 +125,9 @@ windowsSizes (Size width height) = [ (Size w h, moveIcr', nMovesX, nMovesY)
 -- 'IntegralImage's (normal and squared).
 windows :: II.IntegralImage -> II.IntegralImage -> [Win]
 windows ii sqii = [ win (Rect x y w h) ii sqii
-    | (Size w h, moveIcr', nMovesX, nMovesY) <- windowsSizes imageSize
-    , x <- map round $ take nMovesX $ iterate (+ moveIcr') 0
-    , y <- map round $ take nMovesY $ iterate (+ moveIcr') 0
+    | (Size w h, moveIncr', nMovesX, nMovesY) <- windowsSizes imageSize
+    , y <- map round $ take nMovesY $ iterate (+ moveIncr') 0
+    , x <- map round $ take nMovesX $ iterate (+ moveIncr') 0
     ]
   where
     imageSize = II.originalSize ii
@@ -130,22 +136,34 @@ windows ii sqii = [ win (Rect x y w h) ii sqii
 -- | Generates an infinite list of random windows from the integral images.
 randomWindows :: RandomGen g => 
                  g -> II.IntegralImage -> II.IntegralImage -> [Win]
-randomWindows initGen ii sqii =
-    go initGen
+randomWindows initGen ii sqii 
+    | nWins == 0 = []
+    | otherwise  = go initGen
   where
     go !gen = 
-        let (sizeIndex, gen') = randomR (bounds sizes) gen
-            (Size w h, moveIcr', nMovesX, nMovesY) = sizes ! sizeIndex
-            (xIndex, gen'') = randomR (0, nMovesX - 1) gen'
-            x = round (rational xIndex * moveIcr')
-            (yIndex, gen''') = randomR (0, nMovesY - 1) gen''
-            y = round (rational yIndex * moveIcr')
-        in win (Rect x y w h) ii sqii : go gen'''
+        -- Selects a window by choosing a random integer lesser than the number
+        -- of windows, finds the corresponding size and computes the 
+        -- coordinates.
+        let (iWindow, gen') = randomR (0, nWins - 1) gen
+            Just ((rangeStart, _), (Size w h, moveIncr', nMovesX, _nMovesY)) =
+                find (\((_, rangeStop), _) -> iWindow < rangeStop) sizes
+            (yIndex, xIndex) = (iWindow - rangeStart) `quotRem` nMovesX
+            x = round (rational xIndex * moveIncr')
+            y = round (rational yIndex * moveIncr')
+        in win (Rect x y w h) ii sqii : go gen'
     
-    sizes :: Array Int (Size, Rational, Int, Int)
-    sizes = listArray (0, length sizes' - 1) sizes'
+    -- Contains the index ranges ([start; stop[) of each window sizes.
+    sizes :: [((Int, Int), (Size, Rational, Int, Int))]
+    sizes = goSize sizes' 0
     
+    goSize []                                   _          = []
+    goSize (size@(_, _, nMovesX, nMovesY) : ss) rangeStart =
+        let rangeStop = rangeStart + nMovesX * nMovesY
+        in ((rangeStart, rangeStop), size) : goSize ss rangeStop
+    
+    nWins = nWindows imageSize
     sizes' = windowsSizes imageSize
+        
     imageSize = II.originalSize ii
 -- {-# INLINE randomWindows #-}
 
@@ -155,8 +173,8 @@ nWindows size = sum [ nMovesX * nMovesY
     | (_, _, nMovesX, nMovesY) <- windowsSizes size
     ]
 
-double :: Integral a => a -> Double
-double = fromIntegral
+float :: Integral a => a -> Float
+float = fromIntegral
 rational :: Integral a => a -> Rational
 rational  = fromIntegral
 integer :: Integral a => a -> Integer

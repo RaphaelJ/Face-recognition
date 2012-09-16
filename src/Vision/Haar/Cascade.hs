@@ -4,7 +4,7 @@
 
 module Vision.Haar.Cascade (
     -- * Types & constructors
-      HaarCascade (..), HaarCascadeStage
+      HaarCascade (..), HaarCascadeStage (..)
     -- * Functions 
     , trainHaarCascade, cascadeStats
     -- * Impure utilities
@@ -92,41 +92,39 @@ faceConfidence sc window =
 {-# INLINE faceConfidence #-}
 
 maxFalsePositive, stageMaxFalsePositive, stageMinDetection :: Rational
-maxFalsePositive = 0.000001
+maxFalsePositive = 0.00001
 stageMaxFalsePositive = 0.6
-stageMinDetection = 0.995
+stageMinDetection = 0.998
 
--- trainHaarCascade :: RandomGen g => 
---                     [TrainingImage] -> g -> (g -> [TrainingImage]) 
---                  -> HaarCascade
--- trainHaarCascade valid initGen invalidGen =
-trainHaarCascade :: [TrainingImage] -> [TrainingImage] -> HaarCascade
-trainHaarCascade valid invalidGen =
---     trainCascade (HaarCascade []) 1.0 initGen
---     trainCascade (HaarCascade []) 1.0 (invalidGen initGen)
-    trainCascade (HaarCascade []) 1.0 invalidGen
+trainHaarCascade :: RandomGen g => 
+                    [TrainingImage] -> (g -> [TrainingImage]) -> g 
+                 -> HaarCascade
+trainHaarCascade valid invalidGen initGen =
+    HaarCascade stages
   where
+    stages = trainCascade 0 1.0
+    
     !nValid = length valid
     
     -- Trains the cascade by adding a new stage until the false detection rate
     -- is too high.
---     trainCascade cascade falsePositive gen =
-    trainCascade cascade falsePositive invalid =
+    trainCascade nStages falsePositive =
         let -- Selects a new set of invalid tests which are incorrectly detected
             -- as faces by the current cascade.
---             !invalid = force $ take nValid $ filter (cascade `cClass`) (invalidGen gen)
-            !invalid' = force $ take nValid invalid
+            currCascade = HaarCascade (take nStages stages)
+            !invalid = 
+                take nValid $ filter (currCascade `cClass`) (invalidGen initGen)
             
             -- Trains the new stage with the set of tests.
-            sc = tail $ adaBoost (invalid' ++ valid) trainHaarClassifier
-            (!stage, !stageFalsePositive) = trainStage sc invalid'
+            sc = tail $ adaBoost (invalid ++ valid) trainHaarClassifier
+            (!stage, !stageFalsePositive) = trainStage sc invalid
+            
             falsePositive' = falsePositive * stageFalsePositive
-            !cascade' = HaarCascade (hcaStages cascade ++ [stage])
-        in if traceShow ("New classifier - " ++ show (length $ scClassifiers $ hcsClassifier $ stage) ++ " features",  fromIntegral (numerator falsePositive') / fromIntegral (denominator falsePositive')) $ falsePositive' > maxFalsePositive
-              -- Add a new stage if the false detection rate is too high.
---               then trainCascade cascade' falsePositive' (snd $ next gen)
-              then trainCascade cascade' falsePositive' (filter (stage `cClass`) invalid)
-              else cascade'
+        in if falsePositive' > maxFalsePositive
+              -- Add a new stage to the cascade if the false detection rate is 
+              -- too high.
+              then stage : trainCascade (nStages + 1) falsePositive'
+              else []
     
     -- Trains a stage of the cascade by adding a new weak classifier to the 
     -- the stage\'s 'StrongClassifier' until the stage meets the required level
@@ -142,9 +140,9 @@ trainHaarCascade valid invalidGen =
             
             -- Number of not detected valid tests for each threshold.
             thresholdsNotDetected = 
-                let infinity = 1/0 
-                    -- Starts with an infinite threshold so each face is not 
-                    -- detected.
+                -- Starts with an infinite threshold so each face is not 
+                -- detected.
+                let infinity = 1/0
                 in scanl step (infinity, nValid) groupedScores
             step (_, !nNotDetected) (!thres, !nDetected) =
                 (thres, nNotDetected - nDetected)
@@ -164,11 +162,11 @@ trainHaarCascade valid invalidGen =
             
             !nFalsePositive = length $ filter (stage `cClass`) invalid
             !falsePositive = integer nFalsePositive % integer nValid
-        in traceShow (threshold, length invalid, fromIntegral (numerator rate) / fromIntegral (denominator rate), fromIntegral (numerator falsePositive) / fromIntegral (denominator falsePositive)) (if falsePositive > stageMaxFalsePositive
+        in if falsePositive > stageMaxFalsePositive
               -- Add a new weak classifier if the false positive rate is too
               -- high.
               then trainStage scs invalid
-              else (stage, falsePositive))
+              else (stage, falsePositive)
 
 -- | Loads a trained 'HaarCascade'.
 loadHaarCascade :: FilePath -> IO HaarCascade
