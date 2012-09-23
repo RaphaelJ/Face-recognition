@@ -9,8 +9,8 @@ import qualified Tests.Vision.Image as I
 import qualified Tests.Vision.Haar as H
 
 main = defaultMain [
-      testGroup "AdaBoost" A.tests    
-    , testGroup "Shuffle" S.tests    
+      testGroup "AdaBoost" A.tests
+    , testGroup "Shuffle" S.tests
     , testGroup "Primitives" P.tests
     , testGroup "Images" I.tests
     , testGroup "Haar" H.tests
