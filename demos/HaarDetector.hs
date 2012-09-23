@@ -20,7 +20,7 @@ main = do
             putStrLn "Read files names from stdin ..."
             c <- loadHaarCascade cascadePath
             imagesPaths <- lines `fmap` getContents
-            
+
             forM_ imagesPaths $ \imagePath -> do
                 let (dir, file) = splitFileName imagePath
                 detectFaces c imagePath (dir </> "out" </> file)

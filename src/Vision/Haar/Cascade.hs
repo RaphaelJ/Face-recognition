@@ -5,7 +5,7 @@
 module Vision.Haar.Cascade (
     -- * Types & constructors
       HaarCascade (..), HaarCascadeStage (..)
-    -- * Functions 
+    -- * Functions
     , trainHaarCascade, cascadeStats
     -- * Impure utilities
     , loadHaarCascade
@@ -33,10 +33,10 @@ import Vision.Haar.Window (Win, wRect)
 newtype HaarCascade = HaarCascade {
       hcaStages :: [HaarCascadeStage]
     } deriving (Show, Read)
-    
+
 -- | An 'HaarCascadeStage' is 'StrongClassifier' (composed of 'HaarClassifier's)
--- trained with the 'adaBoost' algorithm associated with a threshold on the 
--- detection score which enable the cascade trainer to adjust the detection 
+-- trained with the 'adaBoost' algorithm associated with a threshold on the
+-- detection score which enable the cascade trainer to adjust the detection
 -- rate. First stages of the cascade have high false positive rate but very low
 -- non-detection rate.
 data HaarCascadeStage = HaarCascadeStage {
