@@ -17,7 +17,8 @@ import AI.Learning.Classifier (
     )
 
 import Vision.Haar.Cascade (
-      HaarCascade (..), HaarCascadeStage (..), trainHaarCascade, cascadeStats
+      HaarCascade (..), HaarCascadeStage (..), trainHaarCascade
+    , saveHaarCascade, cascadeStats
     )
 import Vision.Haar.Classifier (TrainingImage (..)) 
 import Vision.Haar.Window (
@@ -33,50 +34,50 @@ import Vision.Primitive (Size (..), Rect (..))
 train :: FilePath -> FilePath -> IO ()
 train directory savePath = do
     putStrLn "Loading images ..."
-    
+
     faces <- loadFaces
     putStrLn $ "\tfaces/ loaded (" ++ show (length faces) ++" images)"
-    
+
     (winGen, nNonFaces, nNonFacesWindows) <- loadNonFaces
     putStr $ "\tnon_faces/ loaded (" ++ show nNonFaces ++" images, "
     putStrLn $ show nNonFacesWindows ++ " windows)"
-    
+
     let (facesTraining, facesTesting) = splitTests 0.90 faces
     let nFacesTraining = length facesTraining
 
     putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
     let cascade = trainHaarCascade facesTraining winGen (mkStdGen 1)
-    
+
     -- Prints the stages of the cascade at the same time they are computed.
     forM_ (hcaStages cascade) $ \s -> do
         let nClassifiers = length $ scClassifiers $ hcsClassifier s
         putStrLn $ "New stage: " ++ show nClassifiers ++ " classifiers"
         print s
-    
+
 --     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
---     
+-- 
 --     putStrLn $ "Detection rate: " ++ show detectionRate
 --     putStrLn $ "False positive rate: " ++ show falsePositiveRate
 
 --     classifierStats classifier testingSet
-    
+
     putStrLn "Save cascade ..."
-    writeFile savePath $ show cascade
+    saveHaarCascade savePath cascade
   where
     -- | Initialises a 'TrainingImage' for each image and its horizontal mirror.
     loadFaces = do
         -- Loads and resizes each image to the detection window\'s size.
         let resize i = I.force $ I.resize i (Size windowWidth windowHeight)
         imgs <- map resize `fmap` loadImages (directory </> "faces")
-        
+
         -- Computes the horizontal mirror for each valid image.
         let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
-        
+
         return [ TrainingImage w True | img <- imgs'
             , let (ii, sqii) = integralImages img
             , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
             ]
-    
+
     -- | Returns an generator of random 'TrainingImage' from the non faces 
     -- images and the number of images and different random windows.
     loadNonFaces = do
@@ -88,7 +89,7 @@ train directory savePath = do
         let nNonFaces = length imgs
         let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
         return (winGen, nNonFaces, nNonFacesWindows)
-        
+
     -- | Given a list of imgs, returns an infinite random list of windows.
     -- The first window comes from the first image, the second window from 
     -- the second image and so on.
@@ -104,15 +105,15 @@ train directory savePath = do
             go (reverse acc) []
         go ~((x:xs):ys) acc =
             x : go ys (xs:acc)
-        
+
         -- Returns the list of the infinite random lists of windows for each 
         -- image.
         imgsWindows = [ randomWindows (mkStdGen $ randomVal * i) ii sqii
             | (i, (ii, sqii)) <- zip [1..] iimgs
             ]
-        
+
         randomVal = fst $ next gen
-   
+
     integralImages img =
         let ii = II.integralImage img id
             sqii = II.integralImage img (^(2 :: Int))
@@ -129,11 +130,11 @@ train directory savePath = do
 -- classifierStats :: HaarCascade -> [TrainingImage] -> IO ()
 -- classifierStats classifier tests = do
 --     putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
---     
+-- 
 --     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
 --     putStrLn "Sub classifiers length sorted by score:"
 --     forM_ cs $ \(StrongClassifier wcs _, score) -> do
 --         putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
---         
+-- 
 --     let score = classifierScore classifier tests
 --     putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"

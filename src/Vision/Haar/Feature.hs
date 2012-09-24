@@ -8,9 +8,9 @@ module Vision.Haar.Feature (
     -- * Functions
     , compute, features, featuresPos
     ) where
-    
+
 import Data.Int
-    
+
 import qualified Vision.Haar.Window as W
 import Vision.Primitive (Point (..), Rect (..))
 
@@ -47,7 +47,7 @@ compute (TwoVertRect (Rect x y w h)) win =
         !s1 = W.normalizeSum win n (dN + aN - bN - cN) (d + a - b - c)
         !s2 = W.normalizeSum win n (fN + cN - dN - eN) (f + c - d - e)
     in s2 - s1
-    
+
 compute (TwoHorizRect (Rect x y w h)) win =
     -- a ------- b ------- c
     -- -         -         -
@@ -94,7 +94,7 @@ compute (ThreeVertRect (Rect x y w h)) win =
         !s2 = W.normalizeSum win n (fN + cN - dN - eN) (f + c - d - e)
         !s3 = W.normalizeSum win n (iN + eN - fN - gN) (i + e - f - g)
     in s1 + s3 - s2
-        
+
 compute (ThreeHorizRect (Rect x y w h)) win =
     -- a ------- b ------- c ------- d
     -- -         -         -         -
@@ -115,7 +115,7 @@ compute (ThreeHorizRect (Rect x y w h)) win =
         !s2 = W.normalizeSum win n (gN + bN - cN - fN) (g + b - c - f)
         !s3 = W.normalizeSum win n (iN + cN - dN - gN) (i + c - d - g)
     in s1 + s3 - s2
-    
+
 compute (FourRect (Rect x y w h)) win =
     -- a ------- b ------- c
     -- -         -         -
@@ -153,7 +153,7 @@ features =
     map ThreeVertRect (featuresPos 1 3) ++
     map ThreeHorizRect (featuresPos 3 1) ++
     map FourRect (featuresPos 2 2)
-    
+
 -- | Lists all features positions and sizes inside the default window.
 featuresPos :: Int -> Int -> [Rect]
 featuresPos minWidth minHeight =

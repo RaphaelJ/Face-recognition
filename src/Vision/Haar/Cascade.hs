@@ -2,21 +2,20 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+-- | Contains everything to train and use a cascade of 'HaarClassifier'.
+-- The cascade is composed of 'StrongClassifier's build on 'HaarClassifier's.
 module Vision.Haar.Cascade (
     -- * Types & constructors
       HaarCascade (..), HaarCascadeStage (..)
     -- * Functions
     , trainHaarCascade, cascadeStats
     -- * Impure utilities
-    , loadHaarCascade
+    , saveHaarCascade, loadHaarCascade
     ) where
 
 import Data.List
 import Data.Ratio
-import Control.DeepSeq (NFData (), rnf, force)
-import System.Random (RandomGen, StdGen, mkStdGen, next)
-
-import Debug.Trace
+import System.Random (RandomGen)
 
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
@@ -26,7 +25,7 @@ import AI.Learning.Classifier (
 import Vision.Haar.Classifier (
       HaarClassifier (..), TrainingImage (..), trainHaarClassifier
     )
-import Vision.Haar.Window (Win, wRect)
+import Vision.Haar.Window (Win)
 
 -- | The 'HaarCascade' consists in a set of 'HaarCascadeStage' which will be
 -- evaluated in cascade to check an image for an object.
@@ -43,14 +42,11 @@ data HaarCascadeStage = HaarCascadeStage {
       hcsClassifier :: !(StrongClassifier HaarClassifier)
     , hcsThreshold :: !Score
     } deriving (Show, Read)
-    
-instance NFData TrainingImage where
-    rnf ti = ti `seq` () 
- 
+
 -- | The 'HaarCascade' is able to classify a part of an image using its 
 -- iteration window by evaluating each stage in cascade.
 instance Classifier HaarCascade Win Bool where
-    HaarCascade []     `cClassScore` window = (True, 1)
+    HaarCascade []     `cClassScore` _      = (True, 1)
     HaarCascade stages `cClassScore` window =
         go stages
       where
@@ -77,7 +73,7 @@ instance Classifier HaarCascadeStage Win Bool where
 instance Classifier HaarCascadeStage TrainingImage Bool where
     stage `cClassScore` image = stage `cClassScore` tiWindow image
     {-# INLINE cClassScore #-}
-    
+
 -- | Returns the confidence score that the 'Classifier' gives about the face
 -- nature of the test.
 faceConfidence :: Classifier HaarClassifier t Bool => 
@@ -86,7 +82,7 @@ faceConfidence sc window =
     go (scClassifiers sc) 0
   where
     go []          score = score
-    go ((c, w):cs) score = 
+    go ((c, w):cs) score =
         let score' = if c `cClass` window then w else 0
         in go cs (score + score')
 {-# INLINE faceConfidence #-}
@@ -103,29 +99,29 @@ trainHaarCascade valid invalidGen initGen =
     HaarCascade stages
   where
     stages = trainCascade 0 1.0
-    
+
     !nValid = length valid
-    
+
     -- Trains the cascade by adding a new stage until the false detection rate
     -- is too high.
     trainCascade nStages falsePositive =
         let -- Selects a new set of invalid tests which are incorrectly detected
             -- as faces by the current cascade.
             currCascade = HaarCascade (take nStages stages)
-            !invalid = 
+            invalid =
                 take nValid $ filter (currCascade `cClass`) (invalidGen initGen)
-            
+
             -- Trains the new stage with the set of tests.
             sc = tail $ adaBoost (invalid ++ valid) trainHaarClassifier
             (!stage, !stageFalsePositive) = trainStage sc invalid
-            
+
             falsePositive' = falsePositive * stageFalsePositive
         in if falsePositive' > maxFalsePositive
-              -- Add a new stage to the cascade if the false detection rate is 
+              -- Add a new stage to the cascade if the false detection rate is
               -- too high.
               then stage : trainCascade (nStages + 1) falsePositive'
               else []
-    
+
     -- Trains a stage of the cascade by adding a new weak classifier to the 
     -- the stage\'s 'StrongClassifier' until the stage meets the required level
     -- of false detection.
@@ -135,9 +131,9 @@ trainHaarCascade valid invalidGen initGen =
     trainStage ~(sc:scs) invalid =
         let -- Valid faces scores, sorted, descending.
             scores = reverse $ sort $ map (faceConfidence sc) valid
-            
+
             groupedScores = [ (head s, length s) | s <- group scores ]
-            
+
             -- Number of not detected valid tests for each threshold.
             thresholdsNotDetected = 
                 -- Starts with an infinite threshold so each face is not 
@@ -146,20 +142,20 @@ trainHaarCascade valid invalidGen initGen =
                 in scanl step (infinity, nValid) groupedScores
             step (_, !nNotDetected) (!thres, !nDetected) =
                 (thres, nNotDetected - nDetected)
-            
+
             -- Detection rates (score between 0 and 1) for each threshold.
             thresholdsRate = [ (thres, rate)
                 | (thres, nNotDetected) <- thresholdsNotDetected
                 , let rate = integer (nValid - nNotDetected) % integer nValid
                 ]
-            
+
             -- Find the first threshold which reaches the required minimum
             -- detection rate.
-            Just (!threshold, !rate) = 
+            Just (!threshold, _) =
                 find ((>= stageMinDetection) . snd) thresholdsRate
-            
+
             !stage = HaarCascadeStage sc threshold
-            
+
             !nFalsePositive = length $ filter (stage `cClass`) invalid
             !falsePositive = integer nFalsePositive % integer nValid
         in if falsePositive > stageMaxFalsePositive
@@ -167,10 +163,6 @@ trainHaarCascade valid invalidGen initGen =
               -- high.
               then trainStage scs invalid
               else (stage, falsePositive)
-
--- | Loads a trained 'HaarCascade'.
-loadHaarCascade :: FilePath -> IO HaarCascade
-loadHaarCascade path = read `fmap` readFile path
 
 -- | Gives the statistics (detection rate, false positive rate) of an 
 -- 'HaarCascade'.
@@ -183,6 +175,14 @@ cascadeStats cascade ts =
         detectionRate = double nDetected / double nValid
         falsePositiveRate = double nFalsePositive / double nInvalid
     in (detectionRate, falsePositiveRate)
+
+-- | Saves a trained 'HaarCascade'.
+saveHaarCascade :: FilePath -> HaarCascade -> IO ()
+saveHaarCascade path = writeFile path . show
+
+-- | Loads a trained 'HaarCascade'.
+loadHaarCascade :: FilePath -> IO HaarCascade
+loadHaarCascade path = read `fmap` readFile path
 
 integer :: Integral a => a -> Integer
 integer = fromIntegral

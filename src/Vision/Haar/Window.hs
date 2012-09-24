@@ -25,7 +25,7 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 data Win = Win {
       wRect :: {-# UNPACK #-} !Rect
     , wIntegral :: !II.IntegralImage
-    -- | Values ([0;255]) of the cumulative normal distribution for each 
+    -- | Values ([0;255]) of the cumulative normal distribution for each
     -- pixels values ([0; 255]) based on the average and the standard derivation
     -- of the 'Win' pixels values.
     -- 
@@ -63,13 +63,13 @@ win rect@(Rect _ _ w h) ii sqii =
     n = float $ w * h
     valuesSum = float $ II.sumRectangle ii rect
     squaresSum = float $ II.sumRectangle sqii rect
-    
+
     -- The normal distribution of the window
     !sqrt2Pi = 2.5066282746310002 -- Precomputes some terms
     !a = 1 / (sig * sqrt2Pi)
     !b = -1 / (2 * sig^(2 :: Int))
     normal x = a * exp ((x - avg)^(2 :: Int) * b)
-    
+
     -- The accumulative function of the normal distribution
     -- distribution = tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
     distribution = go 0 0
@@ -86,7 +86,7 @@ Win (Rect winX winY w h) ii _ `getValue` Point x y =
     !destX = winX + ((x * w) `quot` windowWidth)
     !destY = winY + ((y * h) `quot` windowHeight)
 {-# INLINE getValue #-}
-    
+
 -- | Normalizes the sum of a feature rectangle using the average and standard 
 -- derivation of the window and the number of pixels of the rectangle ('n') 
 -- with the number of pixels of the same rectangle in the standard window 
@@ -140,30 +140,30 @@ randomWindows initGen ii sqii
     | nWins == 0 = []
     | otherwise  = go initGen
   where
-    go !gen = 
+    go !gen =
         -- Selects a window by choosing a random integer lesser than the number
-        -- of windows, finds the corresponding size and computes the 
+        -- of windows, finds the corresponding size and computes the
         -- coordinates.
         let (iWindow, gen') = randomR (0, nWins - 1) gen
             Just ((rangeStart, _), (Size w h, moveIncr', nMovesX, _nMovesY)) =
                 find (\((_, rangeStop), _) -> iWindow < rangeStop) sizes
             (yIndex, xIndex) = (iWindow - rangeStart) `quotRem` nMovesX
-            x = round (rational xIndex * moveIncr')
-            y = round (rational yIndex * moveIncr')
+            x = round $ rational xIndex * moveIncr'
+            y = round $ rational yIndex * moveIncr'
         in win (Rect x y w h) ii sqii : go gen'
-    
-    -- Contains the index ranges ([start; stop[) of each window sizes.
+
+    -- Contains the index ranges ([start; stop[) for each window sizes.
     sizes :: [((Int, Int), (Size, Rational, Int, Int))]
     sizes = goSize sizes' 0
-    
+
     goSize []                                   _          = []
     goSize (size@(_, _, nMovesX, nMovesY) : ss) rangeStart =
         let rangeStop = rangeStart + nMovesX * nMovesY
         in ((rangeStart, rangeStop), size) : goSize ss rangeStop
-    
+
     nWins = nWindows imageSize
     sizes' = windowsSizes imageSize
-        
+
     imageSize = II.originalSize ii
 -- {-# INLINE randomWindows #-}
 

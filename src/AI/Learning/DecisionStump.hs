@@ -12,19 +12,16 @@ import Data.Function
 import Data.List
 
 import AI.Learning.Classifier (
-      TrainingTest (..), Classifier (..), Weight, Score
+      Classifier (..), Weight, Score, TrainingTest (..)
     )
 
+-- | Data representation of a 'DecisionStump' classifier
 data DecisionStump a = DecisionStump {
       dsThreshold :: !a
     , dsParity :: !Bool
     -- ^ True: higher/equal than threshold, False: lower.
     } deriving (Show, Read, Eq)
-    
-data DecisionStumpTest a = DecisionStumpTest {
-      dstValue :: !a, dstValid :: !Bool
-    } deriving (Show, Read, Eq)
-    
+
 instance Ord a => Classifier (DecisionStump a) a Bool where
     DecisionStump thres parity `cClassScore` val =
         let valid = if parity
@@ -32,22 +29,13 @@ instance Ord a => Classifier (DecisionStump a) a Bool where
                        else val < thres
         in (valid, 1.0)
     {-# INLINE cClassScore #-}
-    
-instance Ord a => TrainingTest (DecisionStumpTest a) Bool where
-    tClass = dstValid
-    {-# INLINE tClass #-}
-    
-instance Ord a => Classifier (DecisionStump a) (DecisionStumpTest a) Bool where
-    stump `cClassScore` test = stump `cClassScore` (dstValue test)
-    {-# INLINE cClassScore #-}
 
 -- | Select the best threshold for the 'DecisionStump'. Positives tests gets a
 -- positive weight and negative tests a negative weight. Returns the stump with
 -- its error score.
-trainDecisionStump :: Ord a => 
-                      [(DecisionStumpTest a, Weight)] 
+trainDecisionStump :: Ord a => [(TrainingTest a Bool, Weight)]
                    -> (DecisionStump a, Score)
-trainDecisionStump ts = 
+trainDecisionStump ts =
     -- Selects the best classifier over all features.
     maximumBy score stumps
   where
@@ -57,36 +45,36 @@ trainDecisionStump ts =
         -- The first computed stump will give 'True' for each test, so its
         -- score is the weight of valid tests.
         fst $ foldl' step ([], weightValid) values
-    
+
     step (cs, trueScore) (value, weights) =
         let c1 = (DecisionStump value True, trueScore)
             falseScore = 1.0 - trueScore
             c2 = (DecisionStump value False, falseScore)
-            
+
             trueScore' = trueScore - weights
         in (c1 : c2 : cs, trueScore')
 
     -- | Sums the weight of all valid tests.
-    weightValid = sum [ w | (t, w) <- ts, dstValid t ]
-    
+    weightValid = sum [ w | (t, w) <- ts, tValid t ]
+
     values = groupValues ts
-    
+
     score = compare `on` snd
 {-# INLINE trainDecisionStump #-} -- Inline will specialise the function
 
 -- | Sorts and then groups values. Returns each distinct value with the sum of
 -- all of its weights.
-groupValues :: Ord a => [(DecisionStumpTest a, Weight)] -> [(a, Weight)]
+groupValues :: Ord a => [(TrainingTest a Bool, Weight)] -> [(a, Weight)]
 groupValues =
-    groups . sortBy (compare `on` (dstValue . fst))
+    groups . sortBy (compare `on` (tTest . fst))
   where
     -- | Groups the same consecutive values and sums their weights.
     groups []      = []
     groups (t:ts) =
-        let value = dstValue $ fst t
-            (same, ts') = span ((== value) . dstValue . fst) ts
+        let value = tTest $ fst t
+            (same, ts') = span ((== value) . tTest . fst) ts
             groupWeight = signedWeight t + sum (map signedWeight same)
         in (value, groupWeight) : groups ts'
-    
-    signedWeight (t, w) = if dstValid t then w else -w
+
+    signedWeight (t, w) = if tTest t then w else -w
 {-# INLINE groupValues #-}

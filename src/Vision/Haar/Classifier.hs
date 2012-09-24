@@ -1,6 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+-- | Contains everything to train and use a 'HaarClassifier'.
+-- A 'HaarClassifier' is a simple 'DecisionStump' which classifies a windows
+-- when a feature exceeds a certain threshold.
 module Vision.Haar.Classifier (
     -- * Types & constructors
       HaarClassifier (..), TrainingImage (..)
@@ -12,6 +15,7 @@ import Control.Parallel.Strategies
 import Data.Function
 import Data.Int
 import Data.List
+
 import GHC.Conc (numCapabilities)
 
 import AI.Learning.Classifier (
@@ -28,13 +32,13 @@ import Vision.Haar.Window (Win)
 data HaarClassifier = HaarClassifier {
       hcFeature :: !HaarFeature, hcStump :: !(DecisionStump Int64)
     } deriving (Show, Read)
-    
+
 -- | Contains a training image with its 'IntegralImage'.
 data TrainingImage = TrainingImage {
       tiWindow :: !Win, tiValid :: !Bool
     }
 
--- | The 'HaarClassifier' is able to classify a iteration window from an image.
+-- | The 'HaarClassifier' is able to classify an iteration window from an image.
 instance Classifier HaarClassifier Win Bool where
     HaarClassifier feature stump `cClassScore` window =
         let !value = feature `compute` window
@@ -62,15 +66,15 @@ trainHaarClassifier ts =
     -- Selects the best 'DecisionStump' over all features.
     maximumBy (compare `on` snd) bestClassifiers
   where
-    -- | Compute the best 'DecisionStump' for each feature on the set of tests,
+    -- Compute the best 'DecisionStump' for each feature on the set of tests,
     -- using parallel computing.
     bestClassifiers =
         let strategy = evalTuple2 rseq rseq
            -- parMap will cause a space leak because each feature will be
            -- evaluated at the same time.
         in map featureStump features `using` parListChunk chunksSize strategy
-    
-    -- | Trains the best 'DecisionStump' for the feature and the set of tests.
+
+    -- Trains the best 'DecisionStump' for the feature and the set of tests.
     featureStump f =
         let (stump, score) = trainDecisionStump [
                   (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w)
