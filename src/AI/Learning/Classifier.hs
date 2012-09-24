@@ -50,8 +50,8 @@ data StrongClassifier c = StrongClassifier {
 -- process with a method to gets its correct class identifier (i.e. Bool for
 -- binary classes ...).
 data TrainingTest t cl = TrainingTest {
-      tTest :: t
-    , tClass :: cl -- ^ Gives the class of the test.
+      tTest :: !t
+    , tClass :: !cl -- ^ Gives the class of the test.
     }
 
 -- | Represents all the classes usable for the 'StrongClassifier'.

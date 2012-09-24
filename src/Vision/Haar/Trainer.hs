@@ -13,14 +13,14 @@ import System.FilePath ((</>))
 import System.Random (mkStdGen, next)
 
 import AI.Learning.Classifier (
-      StrongClassifier (..), splitTests, classifierScore, strongClassifierScores
+      StrongClassifier (..), TrainingTest (..), splitTests, classifierScore
+    , strongClassifierScores
     )
 
 import Vision.Haar.Cascade (
       HaarCascade (..), HaarCascadeStage (..), trainHaarCascade
     , saveHaarCascade, cascadeStats
     )
-import Vision.Haar.Classifier (TrainingImage (..)) 
 import Vision.Haar.Window (
       win, windowWidth, windowHeight, randomWindows, nWindows
     )
@@ -73,7 +73,7 @@ train directory savePath = do
         -- Computes the horizontal mirror for each valid image.
         let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
 
-        return [ TrainingImage w True | img <- imgs'
+        return [ TrainingTest w True | img <- imgs'
             , let (ii, sqii) = integralImages img
             , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
             ]
@@ -83,8 +83,8 @@ train directory savePath = do
     loadNonFaces = do
         imgs <- map I.force `fmap` loadImages (directory </> "non_faces")
         let iimgs = map integralImages imgs
-        let winGen gen = [ TrainingImage w False 
-                | w <- randomImagesWindows iimgs gen 
+        let winGen gen = [ TrainingTest w False
+                | w <- randomImagesWindows iimgs gen
                 ]
         let nNonFaces = length imgs
         let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
@@ -93,7 +93,7 @@ train directory savePath = do
     -- | Given a list of imgs, returns an infinite random list of windows.
     -- The first window comes from the first image, the second window from 
     -- the second image and so on.
-    randomImagesWindows iimgs gen = 
+    randomImagesWindows iimgs gen =
         go imgsWindows []
       where
         -- Consumes the list of infinite lists of windows by taking a window

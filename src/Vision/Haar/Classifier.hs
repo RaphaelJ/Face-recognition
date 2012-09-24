@@ -6,7 +6,7 @@
 -- when a feature exceeds a certain threshold.
 module Vision.Haar.Classifier (
     -- * Types & constructors
-      HaarClassifier (..), TrainingImage (..)
+      HaarClassifier (..)
     -- * Functions
     , trainHaarClassifier
     ) where
@@ -22,7 +22,7 @@ import AI.Learning.Classifier (
       TrainingTest (..), Classifier (..), Weight, Score
     )
 import AI.Learning.DecisionStump (
-      DecisionStump, DecisionStumpTest (..), trainDecisionStump
+      DecisionStump, trainDecisionStump
     )
 
 import Vision.Haar.Feature (HaarFeature, features, compute)
@@ -33,24 +33,11 @@ data HaarClassifier = HaarClassifier {
       hcFeature :: !HaarFeature, hcStump :: !(DecisionStump Int64)
     } deriving (Show, Read)
 
--- | Contains a training image with its 'IntegralImage'.
-data TrainingImage = TrainingImage {
-      tiWindow :: !Win, tiValid :: !Bool
-    }
-
 -- | The 'HaarClassifier' is able to classify an iteration window from an image.
 instance Classifier HaarClassifier Win Bool where
     HaarClassifier feature stump `cClassScore` window =
         let !value = feature `compute` window
         in stump `cClassScore` value
-    {-# INLINE cClassScore #-}
-
-instance TrainingTest TrainingImage Bool where
-    tClass = tiValid
-    {-# INLINE tClass #-}
-
-instance Classifier HaarClassifier TrainingImage Bool where
-    classifier `cClassScore` image = classifier `cClassScore` tiWindow image
     {-# INLINE cClassScore #-}
 
 -- | Defines how the features list must be divided so only a chunk is running
@@ -61,7 +48,8 @@ chunksSize = length features `quot` numCapabilities
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
 -- The classifier selection can benefit from parallel computing.
-trainHaarClassifier :: [(TrainingImage, Weight)] -> (HaarClassifier, Score)
+trainHaarClassifier :: [(TrainingTest Win Bool, Weight)]
+                    -> (HaarClassifier, Score)
 trainHaarClassifier ts =
     -- Selects the best 'DecisionStump' over all features.
     maximumBy (compare `on` snd) bestClassifiers
@@ -74,10 +62,10 @@ trainHaarClassifier ts =
            -- evaluated at the same time.
         in map featureStump features `using` parListChunk chunksSize strategy
 
-    -- Trains the best 'DecisionStump' for the feature and the set of tests.
+    -- Trains the best 'DecisionStump' for one feature and the set of tests.
     featureStump f =
         let (stump, score) = trainDecisionStump [
-                  (DecisionStumpTest (f `compute` tiWindow t) (tiValid t), w)
+                  (TrainingTest (f `compute` tTest t) (tClass t), w)
                 | (t, w) <- ts
                 ]
         in (HaarClassifier f stump, score)

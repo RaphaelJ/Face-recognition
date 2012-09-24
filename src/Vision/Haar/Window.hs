@@ -9,8 +9,7 @@ module Vision.Haar.Window (
     , getValue, normalizeSum, windows, randomWindows, nWindows
     ) where
 
-import Data.Array (Array)
-import Data.Array.IArray (bounds, listArray, (!))
+import Data.Array.IArray (listArray, (!))
 import Data.Array.Unboxed (UArray)
 import Data.Int
 import Data.List

@@ -37,7 +37,7 @@ groupRectangles (r:rs) =
     -- Execute a deep first search on each remaining rectangle.
     let (groupLeader, notConnected) = runState (findConnected r) rs
     in groupLeader : groupRectangles notConnected
-    
+
 -- | Execute a deep first search to find all the linked rectangles with the
 -- rectangle given in argument. The 'State' monad keeps the rectangles which are
 -- still not connected. Keeps the rectangle with the highest score.
@@ -48,7 +48,7 @@ findConnected r = do
     put notConnected
     connected' <- mapM findConnected connected -- Find nested connected
     let groupLeader = maximumBy (compare `on` snd) (r : connected')
-    
+
     return $! groupLeader
   where
     -- | Groups two rectangles if they share more than 50% of their surfaces.

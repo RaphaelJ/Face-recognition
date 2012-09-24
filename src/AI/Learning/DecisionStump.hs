@@ -3,7 +3,7 @@
 
 module AI.Learning.DecisionStump (
     -- * Types
-      DecisionStump (..), DecisionStumpTest (..)
+      DecisionStump (..)
     -- * Functions
     , trainDecisionStump
     ) where
@@ -55,7 +55,7 @@ trainDecisionStump ts =
         in (c1 : c2 : cs, trueScore')
 
     -- | Sums the weight of all valid tests.
-    weightValid = sum [ w | (t, w) <- ts, tValid t ]
+    weightValid = sum [ w | (t, w) <- ts, tClass t ]
 
     values = groupValues ts
 
@@ -76,5 +76,5 @@ groupValues =
             groupWeight = signedWeight t + sum (map signedWeight same)
         in (value, groupWeight) : groups ts'
 
-    signedWeight (t, w) = if tTest t then w else -w
+    signedWeight (t, w) = if tClass t then w else -w
 {-# INLINE groupValues #-}
