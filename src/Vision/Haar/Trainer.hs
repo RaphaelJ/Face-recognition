@@ -18,32 +18,38 @@ import Vision.Haar.Cascade (
     , saveHaarCascade, cascadeStats
     )
 import Vision.Haar.Window (
-      windowWidth, windowHeight, nWindows
+      windows, windowWidth, windowHeight, nWindows
     )
 import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Size (..))
 
 -- | Trains a strong classifier from directory of tests containing two
--- directories (faces & non_faces).
+-- directories (good/ & bad/).
 train :: FilePath -> FilePath -> IO ()
 train directory savePath = do
     putStrLn "Loading images ..."
 
-    faces <- loadFaces
-    putStrLn $ "\tfaces/ loaded (" ++ show (length faces) ++" images)"
+    good <- loadGood
+    putStrLn $ "\tgood/ loaded (" ++ show (length good) ++" images)"
 
-    nonFaces <- loadNonFaces
-    let nNonFacesWindows = sum (map (nWindows . II.originalSize . fst) nonFaces)
+    bad <- loadBad
+    let nBadWindows = sum (map (nWindows . II.originalSize . fst) bad)
 
-    putStr $ "\tnon_faces/ loaded (" ++ show (length nonFaces) ++" images, "
-    putStrLn $ show nNonFacesWindows ++ " windows)"
+    putStr $ "\tbad/ loaded (" ++ show (length bad) ++" images, "
+    putStrLn $ show nBadWindows ++ " windows)"
 
-    let (facesTraining, facesTesting) = splitTests 0.90 faces
-    let nFacesTraining = length facesTraining
+    let (goodTraining, goodTesting) = splitTests 0.90 good
+    let nGoodTesting = length goodTesting
 
-    putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
-    let cascade = trainHaarCascade faces nonFaces
+    let (badTraining, badTesting) = splitTests 0.90 nonFaces
+
+    let goodTestingWindows = windows goodTesting
+    let badTestingWindows = randomImagesWindows nonFacesTesting
+    let testWindows = testingFacesWindows ++ take facesTesting testingNonFacesWindows
+
+    putStrLn $ "Train on " ++ show (length facesTraining) ++ " faces ..."
+    let cascade = trainHaarCascade facesTraining nonFacesTraining
 
     -- Prints the stages of the cascade at the same time they are computed.
     forM_ (hcaStages cascade) $ \s -> do

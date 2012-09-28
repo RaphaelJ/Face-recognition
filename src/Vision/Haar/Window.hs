@@ -140,9 +140,9 @@ windows ii sqii = [ win (Rect x y w h) ii sqii
     imageSize = II.originalSize ii
 
 -- | Generates an infinite list of random windows from the integral images.
-randomWindows :: RandomGen g => 
+randomWindows :: RandomGen g =>
                  g -> II.IntegralImage -> II.IntegralImage -> [Win]
-randomWindows initGen ii sqii 
+randomWindows initGen ii sqii
     | nWins == 0 = []
     | otherwise  = go initGen
   where

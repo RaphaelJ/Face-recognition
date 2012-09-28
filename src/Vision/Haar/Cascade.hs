@@ -193,7 +193,7 @@ trainHaarCascade validImgs invalidImgs =
             | (i, (ii, sqii)) <- zip [1..] invalidImgs
             ]
 
--- | Gives the statistics (detection rate, false positive rate) of an 
+-- | Gives the statistics (detection rate, false positive rate) of an
 -- 'HaarCascade'.
 cascadeStats :: HaarCascade -> [TrainingTest Win Bool] -> (Score, Score)
 cascadeStats cascade ts = 
