@@ -17,6 +17,7 @@ instance Convertible IL.Image RGBImage where
     safeConvert (IL.RGB i) = return $! RGBImage $ delay i
     safeConvert (IL.RGBA i) = return $! convert $ R.RGBAImage $ delay i
     safeConvert (IL.Grey i) = return $! convert $ G.GreyImage $ delay i
+    safeConvert _ = error "Unsupported format"
     {-# INLINE safeConvert #-}
     
 -- | Converts an RGB image to its DevIL representation.

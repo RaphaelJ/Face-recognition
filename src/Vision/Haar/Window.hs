@@ -9,8 +9,8 @@ module Vision.Haar.Window (
     , getValue, normalizeSum, windows, randomWindows, nWindows
     ) where
 
-import Data.Array.IArray (listArray, (!))
-import Data.Array.Unboxed (UArray)
+-- import Data.Array.IArray (listArray, (!))
+-- import Data.Array.Unboxed (UArray)
 import Data.Int
 import Data.List
 import Data.Ratio
@@ -24,15 +24,17 @@ import Vision.Primitive (Point (..), Size (..), Rect (..))
 data Win = Win {
       wRect :: {-# UNPACK #-} !Rect
     , wIntegral :: !II.IntegralImage
-    -- | Values ([0;255]) of the cumulative normal distribution for each
-    -- pixels values ([0; 255]) based on the average and the standard derivation
-    -- of the 'Win' pixels values.
-    -- 
-    -- Used to equalise the values inside 'Win' histogram. This will return the
-    -- value of the pixel of value @x@ in the equalised distribution:
-    -- 
-    -- > wDistibution win ! x
-    , wDistibution :: !(UArray Int Float)
+    , wAvg :: {-# UNPACK #-} !Float, wSig :: {-# UNPACK #-}  !Float
+
+-- -- | Values ([0;255]) of the cumulative normal distribution for each
+-- -- pixels values ([0; 255]) based on the average and the standard derivation
+-- -- of the 'Win' pixels values.
+-- -- 
+-- -- Used to equalise the values inside 'Win' histogram. This will return the
+-- -- value of the pixel of value @x@ in the equalised distribution:
+-- -- 
+-- -- > wDistibution win ! x
+-- , wDistibution :: !(UArray Int Float)
     }
 
 -- | Default window\'s size.
@@ -55,30 +57,33 @@ maxPyramDeep = 16
 -- distribution using the standard derivation and the average of pixels values.
 win :: Rect -> II.IntegralImage -> II.IntegralImage -> Win
 win rect@(Rect _ _ w h) ii sqii =
-    Win rect ii (listArray (0, 255) distribution)
+    Win rect ii avg sig
+--     Win rect ii (listArray (0, 255) distribution)
   where
     avg = valuesSum / n
     sig = max 1 $ sqrt $ (squaresSum / n) - avg^(2 :: Int)
     n = float $ w * h
     valuesSum = float $ II.sumRectangle ii rect
     squaresSum = float $ II.sumRectangle sqii rect
+{-# INLINE win #-}
 
-    -- The normal distribution of the window
-    !sqrt2Pi = 2.5066282746310002 -- Precomputes some terms
-    !a = 1 / (sig * sqrt2Pi)
-    !b = -1 / (2 * sig^(2 :: Int))
-    normal x = a * exp ((x - avg)^(2 :: Int) * b)
-
-    -- The accumulative function of the normal distribution
-    -- distribution = tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
-    distribution = go 0 0
-    go acc x | x > 255   = []
-             | otherwise = let acc' = acc + normal x * 255 
-                           in acc' : go acc' (x + 1)
+-- -- The normal distribution of the window
+-- !sqrt2Pi = 2.5066282746310002 -- Precomputes some terms
+-- !a = 1 / (sig * sqrt2Pi)
+-- !b = -1 / (2 * sig^(2 :: Int))
+-- normal x = a * exp ((x - avg)^(2 :: Int) * b)
+-- 
+-- -- The accumulative function of the normal distribution
+-- -- distribution = tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
+-- distribution = go 0 0
+-- go acc x | x > 255   = []
+--          | otherwise = let !acc' = acc + normal x * 255
+--                        in acc' : go acc' (x + 1)
 
 -- | Gets the value of a point (in default window coordinates) inside a window.
 getValue :: Win -> Point -> (Int64, Int)
-Win (Rect winX winY w h) ii _ `getValue` Point x y =
+Win (Rect winX winY w h) ii _ _ `getValue` Point x y =
+-- Win (Rect winX winY w h) ii _ `getValue` Point x y =
     (ii `I.getPixel` Point destX destY, destX * destY)
   where
     -- New coordinates taking care of the window\'s ratio
@@ -86,18 +91,21 @@ Win (Rect winX winY w h) ii _ `getValue` Point x y =
     !destY = winY + ((y * h) `quot` windowHeight)
 {-# INLINE getValue #-}
 
--- | Normalizes the sum of a feature rectangle using the average and standard 
--- derivation of the window and the number of pixels of the rectangle ('n') 
--- with the number of pixels of the same rectangle in the standard window 
+-- | Normalizes the sum of a feature rectangle using the average and standard
+-- derivation of the window and the number of pixels of the rectangle ('n')
+-- with the number of pixels of the same rectangle in the standard window
 -- ('standardN').
 -- This way, two sums inside two windows of different size/standard derivation
 -- can be compared.
 normalizeSum :: Win -> Int -> Int -> Int64 -> Int64
-normalizeSum (Win _ _ distribution) standardN n s =
-    round $ float standardN * normalize (s `quot` int64 n)
-  where
-    normalize p = distribution ! int p
+normalizeSum (Win _ _ avg sig) standardN n s =
+    truncate $ ((float s - (float n * avg)) / sig) * (float standardN)
 {-# INLINE normalizeSum #-}
+-- normalizeSum (Win _ _ distribution) standardN n s =
+--     round $ float standardN * normalize (s `quot` int64 n)
+--   where
+--     normalize p = distribution ! int p
+-- {-# INLINE normalizeSum #-}
 
 -- | Returns, for the size of an image, the size of all possible windows with
 -- their associated movement increment and their number of possible windows 
@@ -130,7 +138,6 @@ windows ii sqii = [ win (Rect x y w h) ii sqii
     ]
   where
     imageSize = II.originalSize ii
-{-# INLINE windows #-}
 
 -- | Generates an infinite list of random windows from the integral images.
 randomWindows :: RandomGen g => 
@@ -178,7 +185,7 @@ rational :: Integral a => a -> Rational
 rational  = fromIntegral
 integer :: Integral a => a -> Integer
 integer = fromIntegral
-int :: Integral a => a -> Int
-int = fromIntegral
-int64 :: Integral a => a -> Int64
-int64 = fromIntegral
+-- int :: Integral a => a -> Int
+-- int = fromIntegral
+-- int64 :: Integral a => a -> Int64
+-- int64 = fromIntegral

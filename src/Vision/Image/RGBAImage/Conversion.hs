@@ -18,7 +18,7 @@ instance Convertible G.GreyImage RGBAImage where
         pixFromGrey pix = RGBAPixel pix pix pix 255
         {-# INLINE pixFromGrey #-}
     {-# INLINE safeConvert #-}
-    
+
 -- | Converts a RGB image to RGBA.
 instance Convertible R.RGBImage RGBAImage where
     safeConvert image =

@@ -45,6 +45,9 @@ instance Classifier HaarClassifier Win Bool where
 chunksSize :: Int
 chunksSize = length features `quot` numCapabilities
 
+{-# SPECIALIZE trainDecisionStump :: [(TrainingTest Int64 Bool, Weight)]
+                                  -> (DecisionStump Int64, Score) #-}
+
 -- | Builds an 'HaarClassifier' which make the best score in classifying the set
 -- of tests and weights given.
 -- The classifier selection can benefit from parallel computing.

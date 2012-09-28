@@ -20,12 +20,11 @@ import Vision.Primitive (Rect (..))
 
 -- | Detects all positive matches inside the image using a strong 'HaarCascade'.
 detect :: HaarCascade -> G.GreyImage -> [(Rect, Score)]
-detect classifier image =
+detect cascade image =
     let integral = II.integralImage image id
         squaredIintegral = II.integralImage image (^(2 :: Int))
         valids = [ (r, s) | !w <- windows integral squaredIintegral
-            , let r = wRect w, let (!v, !s) = classifier `cClassScore` w
-            , v
+            , let r = wRect w, let (!v, s) = cascade `cClassScore` w, v
             ]
     in groupRectangles valids
 
@@ -40,7 +39,8 @@ groupRectangles (r:rs) =
 
 -- | Execute a deep first search to find all the linked rectangles with the
 -- rectangle given in argument. The 'State' monad keeps the rectangles which are
--- still not connected. Keeps the rectangle with the highest score.
+-- still not connected. Keeps the rectangle with the highest score as the leader
+-- of the group.
 findConnected :: (Rect, Score) -> State [(Rect, Score)] (Rect, Score)
 findConnected r = do 
     rs <- get

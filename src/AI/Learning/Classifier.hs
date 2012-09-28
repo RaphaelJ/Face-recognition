@@ -32,8 +32,8 @@ class Classifier c t cl | c t -> cl where
     -- | Infers the class of the test using the classifier.
     cClass :: c -> t -> cl
 
-    -- | Infers the class of the test using the classifier with a score
-    -- ([0.5; 1] with @1@ for sure, @0.5@ for unlikely).
+    -- | Infers the class of the test using the classifier with a confidence
+    -- score in [0; 1] (with @1@ for sure, @0@ for unlikely).
     cClassScore :: c -> t -> (cl, Score)
 
     cClass classifier = fst . (classifier `cClassScore`)
@@ -64,8 +64,8 @@ class StrongClassifierClass cl where
     scClass :: Classifier weak t cl
             => StrongClassifier weak -> t -> cl
 
-    -- | Infers the class of the test using the strong classifier with a score 
-    -- ([0.5; 1] with @1@ for sure, @0.5@ for unlikely).
+    -- | Infers the class of the test using the strong classifier with a confidence
+    -- score in [0; 1] (with @1@ for sure, @0@ for unlikely).
     scClassScore :: Classifier weak t cl
                  => StrongClassifier weak -> t -> (cl, Score)
 
@@ -95,7 +95,6 @@ instance StrongClassifierClass Bool where
             let (!valid, !score) = c `cClassScore` test
             in if valid then (ts + score * w, fs)
                         else (ts, fs + score * w)
-    {-# INLINE scClassScore #-}
 
 -- | Instance for classes with more than two states.
 instance StrongClassifierClass Int where
@@ -109,7 +108,6 @@ instance StrongClassifierClass Int where
         step !acc (!c, !w) =
             let (!cl, !score) = c `cClassScore` test
             in M.insertWith' (+) cl (w * score) acc
-    {-# INLINE scClassScore #-}
 
 -- | Splits the list of tests in two list of tests, for training and testing
 -- following the ratio. Unsort the list of test before the separation.

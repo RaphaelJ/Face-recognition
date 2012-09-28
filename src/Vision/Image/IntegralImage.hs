@@ -74,7 +74,7 @@ instance I.Image IntegralImage Int64 Int64 where
     fromList size xs =
         IntegralImage $ listArray (imageShape size) xs
     {-# INLINE fromList #-}
-    
+
     getSize (IntegralImage image) =
         let (h, w) = snd $ bounds $ image
         in Size (w + 1) (h + 1)
@@ -83,14 +83,14 @@ instance I.Image IntegralImage Int64 Int64 where
     IntegralImage image `getPixel` Point x y = 
        image ! (y, x)
     {-# INLINE getPixel #-}
-    
+
 instance I.Pixel Int64 Int64 where
     pixToValues pix = [pix]
     {-# INLINE pixToValues #-}
-    
+
     valuesToPix ~[pix] = pix
     {-# INLINE valuesToPix #-}
-    
+
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
        

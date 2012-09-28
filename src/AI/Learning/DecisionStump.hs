@@ -60,7 +60,7 @@ trainDecisionStump ts =
     values = groupValues ts
 
     score = compare `on` snd
-{-# INLINE trainDecisionStump #-} -- Inline will specialise the function
+{-# INLINABLE trainDecisionStump #-} -- Inline to specialise the function
 
 -- | Sorts and then groups values. Returns each distinct value with the sum of
 -- all of its weights.

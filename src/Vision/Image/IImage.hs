@@ -31,26 +31,26 @@ import qualified Data.Array.Repa.IO.DevIL as IL
 class Pixel p a => Image i p a | i -> p a where
     fromList :: Size -> [p] -> i
     toList :: i -> [p]
-    
+
     fromFunction :: Size -> (Point -> p) -> i
-    
+
     getSize :: i -> Size
-    
+
     getPixel, unsafeGetPixel :: i -> Point -> p
-    
+
     -- | Force the evaluation of the underlying array (default definition is
     -- 'undefined'). Useful for images with a delayed representation.
     force :: i -> i
-    
+
     toList i = map (i `unsafeGetPixel`) (sizeRange $ getSize i)
     {-# INLINE toList #-} 
-        
+
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
     {-# INLINE fromFunction #-}
-    
+
     unsafeGetPixel = getPixel
     {-# INLINE unsafeGetPixel #-} 
-    
+
     force = undefined
     {-# INLINE force #-}
 
@@ -61,7 +61,7 @@ class Pixel p a => Image i p a | i -> p a where
 class Pixel p a | p -> a where
     pixToValues :: p -> [a]
     valuesToPix :: [a] -> p
-    
+
     pixApply :: p -> (a -> a) -> p
     pixApply pix f = valuesToPix $ map f $ pixToValues pix
     {-# INLINE pixApply #-}
@@ -70,15 +70,15 @@ class Pixel p a | p -> a where
 class StorableImage i where
     load :: FilePath -> IO i
     save :: i -> FilePath -> IO ()
-    
+
 -- | Makes every image showable.
 instance (Image i p a, Show p) => Show i where
     show = show . toList
-    
+
 -- | Makes every image comparable.
 instance (Image i p a, Eq p) => Eq i where
     a == b = toList a == toList b
-    
+
 -- | Makes every image convertible from and to a DevIL's Image storable into
 -- a file.
 instance (Convertible IL.Image i, Convertible i IL.Image)
@@ -86,7 +86,7 @@ instance (Convertible IL.Image i, Convertible i IL.Image)
     load path =
         IL.runIL $ convert `fmap` IL.readImage path
     {-# INLINE load #-}
-        
+
     save i path = 
         IL.runIL $ IL.writeImage path (convert i)
     {-# INLINE save #-}
@@ -116,7 +116,7 @@ i `unsafeBilinearInterpol` DPoint x y =
     (x2, y2) = (x1 + 1, y1 + 1)
     (d_x1, d_y1, d_x2, d_y2) =
         (double x1, double y1, double x2, double y2)
-        
+
     -- Interpolate each channel of the four pixels.
     interpolateChannels []        _       _        _        = []
     interpolateChannels ~(q:qs') ~(r:rs') ~(s:ss') ~(t:ts') =
@@ -125,16 +125,16 @@ i `unsafeBilinearInterpol` DPoint x y =
         let (q', r') = (double q, double r)
             (s', t') = (double s, double t)
         in round $
-              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y) 
+              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y)
             + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
-    
+
     qs = pixToValues $ i `unsafeGetPixel` Point x1 y1
     rs = pixToValues $ i `unsafeGetPixel` Point x2 y1
     ss = pixToValues $ i `unsafeGetPixel` Point x1 y2
     ts = pixToValues $ i `unsafeGetPixel` Point x2 y2
 {-# INLINE bilinearInterpol #-}
 {-# INLINE unsafeBilinearInterpol #-}
-    
+
 -- | Resizes the 'Image' using a bilinear interpolation.
 resize :: (Image i p a, Integral a) => i -> Size -> i
 resize image size'@(Size w' h') =
@@ -160,10 +160,10 @@ drawRectangle image back border (Rect rx ry rw rh) =
         | inBackground pt = back pix
         | inBorder pt     = border pix
         | otherwise       = pix
-      
+
     inBackground (Point x y) =
         x > rx && y > ry && x < rx' && y < ry'
-    
+
     inBorder (Point x y) =
         x >= rx && y >= ry && x <= rx' && y <= ry'
 

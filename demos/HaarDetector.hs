@@ -24,7 +24,7 @@ main = do
             forM_ imagesPaths $ \imagePath -> do
                 let (dir, file) = splitFileName imagePath
                 detectFaces c imagePath (dir </> "out" </> file)
-        _ ->
+        _ -> do
             putStrLn "Detect faces in an image using an Haar cascade."
             putStrLn "Without <image> and <ouput>, detect faces from paths"
             putStrLn "given to stdin."
@@ -34,7 +34,7 @@ detectFaces :: HaarCascade -> FilePath -> FilePath -> IO ()
 detectFaces cascade imagePath outPath = do
     i <- I.load imagePath :: IO G.GreyImage
     let rs = detect cascade i
-    I.save outPath $ drawRectangles i (map fst rs)
+    I.save (drawRectangles i (map fst rs)) outPath
     putStrLn outPath
     print rs
 

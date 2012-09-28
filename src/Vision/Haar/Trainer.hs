@@ -10,24 +10,19 @@ import Control.Monad
 import Data.List
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
-import System.Random (mkStdGen, next)
 
-import AI.Learning.Classifier (
-      StrongClassifier (..), TrainingTest (..), splitTests, classifierScore
-    , strongClassifierScores
-    )
+import AI.Learning.Classifier (StrongClassifier (..), splitTests)
 
 import Vision.Haar.Cascade (
       HaarCascade (..), HaarCascadeStage (..), trainHaarCascade
     , saveHaarCascade, cascadeStats
     )
 import Vision.Haar.Window (
-      win, windowWidth, windowHeight, randomWindows, nWindows
+      windowWidth, windowHeight, nWindows
     )
 import qualified Vision.Image as I
-import qualified Vision.Image.GreyImage as G
 import qualified Vision.Image.IntegralImage as II
-import Vision.Primitive (Size (..), Rect (..))
+import Vision.Primitive (Size (..))
 
 -- | Trains a strong classifier from directory of tests containing two
 -- directories (faces & non_faces).
@@ -38,15 +33,17 @@ train directory savePath = do
     faces <- loadFaces
     putStrLn $ "\tfaces/ loaded (" ++ show (length faces) ++" images)"
 
-    (winGen, nNonFaces, nNonFacesWindows) <- loadNonFaces
-    putStr $ "\tnon_faces/ loaded (" ++ show nNonFaces ++" images, "
+    nonFaces <- loadNonFaces
+    let nNonFacesWindows = sum (map (nWindows . II.originalSize . fst) nonFaces)
+
+    putStr $ "\tnon_faces/ loaded (" ++ show (length nonFaces) ++" images, "
     putStrLn $ show nNonFacesWindows ++ " windows)"
 
     let (facesTraining, facesTesting) = splitTests 0.90 faces
     let nFacesTraining = length facesTraining
 
     putStrLn $ "Train on " ++ show nFacesTraining ++ " faces ..."
-    let cascade = trainHaarCascade facesTraining winGen (mkStdGen 1)
+    let cascade = trainHaarCascade faces nonFaces
 
     -- Prints the stages of the cascade at the same time they are computed.
     forM_ (hcaStages cascade) $ \s -> do
@@ -64,7 +61,7 @@ train directory savePath = do
     putStrLn "Save cascade ..."
     saveHaarCascade savePath cascade
   where
-    -- | Initialises a 'TrainingImage' for each image and its horizontal mirror.
+    -- Initialises a 'TrainingImage' for each image and its horizontal mirror.
     loadFaces = do
         -- Loads and resizes each image to the detection window\'s size.
         let resize i = I.force $ I.resize i (Size windowWidth windowHeight)
@@ -73,46 +70,13 @@ train directory savePath = do
         -- Computes the horizontal mirror for each valid image.
         let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
 
-        return [ TrainingTest w True | img <- imgs'
-            , let (ii, sqii) = integralImages img
-            , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
-            ]
+        return $! map integralImages imgs'
 
-    -- | Returns an generator of random 'TrainingImage' from the non faces 
+    -- Returns an generator of random 'TrainingImage' from the non faces 
     -- images and the number of images and different random windows.
     loadNonFaces = do
         imgs <- map I.force `fmap` loadImages (directory </> "non_faces")
-        let iimgs = map integralImages imgs
-        let winGen gen = [ TrainingTest w False
-                | w <- randomImagesWindows iimgs gen
-                ]
-        let nNonFaces = length imgs
-        let nNonFacesWindows = sum (map (nWindows . I.getSize) imgs)
-        return (winGen, nNonFaces, nNonFacesWindows)
-
-    -- | Given a list of imgs, returns an infinite random list of windows.
-    -- The first window comes from the first image, the second window from 
-    -- the second image and so on.
-    randomImagesWindows iimgs gen =
-        go imgsWindows []
-      where
-        -- Consumes the list of infinite lists of windows by taking a window
-        -- from each list at a time.
-        -- > [ [a1, a2, a3 ..], [b1, b2, b3 ..], [c1, c2, c3 ..] ]
-        -- becomes:
-        -- > [ a1, b1, c1, a2, b2, c2, a3, b3, c3 .. ]
-        go []           acc =
-            go (reverse acc) []
-        go ~((x:xs):ys) acc =
-            x : go ys (xs:acc)
-
-        -- Returns the list of the infinite random lists of windows for each 
-        -- image.
-        imgsWindows = [ randomWindows (mkStdGen $ randomVal * i) ii sqii
-            | (i, (ii, sqii)) <- zip [1..] iimgs
-            ]
-
-        randomVal = fst $ next gen
+        return $! map integralImages imgs
 
     integralImages img =
         let ii = II.integralImage img id
