@@ -6,9 +6,9 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        [out] -> do
-            train "../data/training_faces/" out
+        [dir, out] -> do
+            train dir out
         _     -> do
             putStrLn "Train a Haar cascade to <out file> using the training"
-            putStrLn "images located in ../data/training_faces/."
-            putStrLn "Usage: HaarTrainer <out file>"
+            putStrLn "images located in <training dir> (which contains a )."
+            putStrLn "Usage: HaarTrainer <training dir> <out file>"

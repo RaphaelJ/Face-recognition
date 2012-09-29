@@ -3,7 +3,7 @@
 
 module Vision.Haar.Trainer (
     -- * Impure utilities
-      train{-, classifierStats-}
+      train
     ) where
 
 import Control.Monad
@@ -14,18 +14,20 @@ import System.FilePath ((</>))
 import AI.Learning.Classifier (StrongClassifier (..), splitTests)
 
 import Vision.Haar.Cascade (
-      HaarCascade (..), HaarCascadeStage (..), trainHaarCascade
-    , saveHaarCascade, cascadeStats
+      HaarCascade (..), HaarCascadeStage (..), maxFalsePositive
+    , trainHaarCascade, saveHaarCascade, cascadeStats
     )
 import Vision.Haar.Window (
-      windows, windowWidth, windowHeight, nWindows
+      windows, windowWidth, windowHeight, nWindows, randomImagesWindows
     )
 import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Size (..))
 
--- | Trains a strong classifier from directory of tests containing two
--- directories (good/ & bad/).
+import System.Random (mkStdGen)
+
+-- | Trains a 'HaarCascade' from directory of tests containing two directories
+-- (good/ & bad/) and save it.
 train :: FilePath -> FilePath -> IO ()
 train directory savePath = do
     putStrLn "Loading images ..."
@@ -42,46 +44,50 @@ train directory savePath = do
     let (goodTraining, goodTesting) = splitTests 0.90 good
     let nGoodTesting = length goodTesting
 
-    let (badTraining, badTesting) = splitTests 0.90 nonFaces
+    let (badTraining, badTesting) = splitTests 0.90 bad
 
-    let goodTestingWindows = windows goodTesting
-    let badTestingWindows = randomImagesWindows nonFacesTesting
-    let testWindows = testingFacesWindows ++ take facesTesting testingNonFacesWindows
+    let goodTestingWindows = concatMap (uncurry windows) goodTesting
+    let randomBadTestingWindows = randomImagesWindows (mkStdGen 1) badTesting
 
-    putStrLn $ "Train on " ++ show (length facesTraining) ++ " faces ..."
-    let cascade = trainHaarCascade facesTraining nonFacesTraining
+    let nBadTestingWindows = round $ 1 / maxFalsePositive
+    let badTestingWindows = take nBadTestingWindows randomBadTestingWindows
 
-    -- Prints the stages of the cascade at the same time they are computed.
-    forM_ (hcaStages cascade) $ \s -> do
-        let nClassifiers = length $ scClassifiers $ hcsClassifier s
-        putStrLn $ "New stage: " ++ show nClassifiers ++ " classifiers"
+    putStrLn $ "Train on " ++ show (length goodTraining) ++ " valid images ..."
+    let cascade = trainHaarCascade goodTraining badTraining
+
+    let stages = hcaStages cascade
+
+    -- Prints the stages of the cascade at the same time they are computed
+    -- and test the current cascade on the testing set.
+    forM_ (zip [1..] stages) $ \(i, s) -> do
+        let nFeatures = length $ scClassifiers $ hcsClassifier s
+        putStrLn $ "New stage: " ++ show nFeatures ++ " features"
         print s
 
---     let (detectionRate, falsePositiveRate) = cascadeStats cascade testingSet
--- 
---     putStrLn $ "Detection rate: " ++ show detectionRate
---     putStrLn $ "False positive rate: " ++ show falsePositiveRate
-
---     classifierStats classifier testingSet
+        let curCascade = HaarCascade (take i stages)
+        let score = cascadeStats curCascade goodTestingWindows badTestingWindows
+        putStrLn "Current cascade score: "
+        putStrLn $ "Detection rate: " ++ show (fst score)
+        putStrLn $ "False positive rate: " ++ show (snd score)
 
     putStrLn "Save cascade ..."
     saveHaarCascade savePath cascade
   where
-    -- Initialises a 'TrainingImage' for each image and its horizontal mirror.
-    loadFaces = do
+    -- Computes the integral images for each image and its horizontal mirror
+    -- from the good/ directory.
+    loadGood = do
         -- Loads and resizes each image to the detection window\'s size.
         let resize i = I.force $ I.resize i (Size windowWidth windowHeight)
-        imgs <- map resize `fmap` loadImages (directory </> "faces")
+        imgs <- map resize `fmap` loadImages (directory </> "good")
 
         -- Computes the horizontal mirror for each valid image.
         let imgs' = (map (I.force . I.horizontalFlip) imgs) ++ imgs
 
         return $! map integralImages imgs'
 
-    -- Returns an generator of random 'TrainingImage' from the non faces 
-    -- images and the number of images and different random windows.
-    loadNonFaces = do
-        imgs <- map I.force `fmap` loadImages (directory </> "non_faces")
+    -- Computes the integral images for invalid images from the bad/ directory.
+    loadBad = do
+        imgs <- loadImages (directory </> "bad")
         return $! map integralImages imgs
 
     integralImages img =
@@ -93,18 +99,4 @@ train directory savePath = do
         files <- (sort . excludeHidden) `fmap` getDirectoryContents dir
         mapM (I.load . (dir </>)) files
 
-    excludeHidden = filter (((/=) '.') . head)
-
--- -- | Prints the statistics of the sub classifiers of the Haar\'s cascade on a
--- -- set of tests.
--- classifierStats :: HaarCascade -> [TrainingImage] -> IO ()
--- classifierStats classifier tests = do
---     putStrLn $ "Test on " ++ show (length tests) ++ " image(s) ..."
--- 
---     let cs = sortBy (compare `on` snd) $ strongClassifierScores classifier tests
---     putStrLn "Sub classifiers length sorted by score:"
---     forM_ cs $ \(StrongClassifier wcs _, score) -> do
---         putStrLn $ show (length wcs) ++ "\t: " ++ show (score * 100) ++ "%"
--- 
---     let score = classifierScore classifier tests
---     putStrLn $ "Global classifier score is " ++ show (score * 100) ++ "%"
+    excludeHidden = filter (((/=) '.') . head)q

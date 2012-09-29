@@ -7,6 +7,8 @@
 module Vision.Haar.Cascade (
     -- * Types & constructors
       HaarCascade (..), HaarCascadeStage (..)
+    -- * Constants
+    , maxFalsePositive, stageMaxFalsePositive, stageMinDetection
     -- * Functions
     , trainHaarCascade, cascadeStats
     -- * Impure utilities
@@ -17,7 +19,6 @@ import Data.List
 import Data.Ratio
 import System.Random (mkStdGen)
 
-
 import AI.Learning.AdaBoost (adaBoost)
 import AI.Learning.Classifier (
       Classifier (..), Score, StrongClassifier (..), TrainingTest (..)
@@ -26,7 +27,9 @@ import AI.Learning.Classifier (
 import Vision.Haar.Classifier (
       HaarClassifier (..), trainHaarClassifier
     )
-import Vision.Haar.Window (Win, win, windowWidth, windowHeight,randomWindows)
+import Vision.Haar.Window (
+      Win, win, windowWidth, windowHeight, randomImagesWindows
+    )
 import qualified Vision.Image.IntegralImage as II
 import Vision.Primitive (Rect (..))
 
@@ -168,39 +171,16 @@ trainHaarCascade validImgs invalidImgs =
     -- The rand parameter imposes to the function to not be a CAF, which would
     -- make a memory overflow.
     invalidsGen rand = [ TrainingTest w False
-        | w <- randomImagesWindows rand
+        | w <- randomImagesWindows (mkStdGen rand) invalidImgs
         ]
-
-    -- Given a list of images, returns an infinite random list of windows.
-    -- The first window comes from the first image, the second window from
-    -- the second image and so on.
-    randomImagesWindows rand =
-        go imgsWindows []
-      where
-        -- Consumes the list of infinite lists of windows by taking a window
-        -- from each list at a time.
-        -- > [ [a1, a2, a3 ..], [b1, b2, b3 ..], [c1, c2, c3 ..] ]
-        -- becomes:
-        -- > [ a1, b1, c1, a2, b2, c2, a3, b3, c3 .. ]
-        go []           acc =
-            go (reverse acc) []
-        go ~((x:xs):ys) acc =
-            x : go ys (xs:acc)
-
-        -- Returns the list of the infinite random lists of windows for each
-        -- image.
-        imgsWindows = [ randomWindows (mkStdGen (rand * i)) ii sqii
-            | (i, (ii, sqii)) <- zip [1..] invalidImgs
-            ]
 
 -- | Gives the statistics (detection rate, false positive rate) of an
 -- 'HaarCascade'.
-cascadeStats :: HaarCascade -> [TrainingTest Win Bool] -> (Score, Score)
-cascadeStats cascade ts = 
-    let (valids, invalids) = partition tClass ts
-        (nValid, nInvalid) = (length valids, length invalids)
-        nDetected = length $ filter ((cascade `cClass`) . tTest) valids
-        nFalsePositive = length $ filter ((cascade `cClass`) . tTest) invalids
+cascadeStats :: HaarCascade -> [Win] -> [Win] -> (Score, Score)
+cascadeStats cascade valids invalids = 
+    let (nValid, nInvalid) = (length valids, length invalids)
+        nDetected = length $ filter (cascade `cClass`) valids
+        nFalsePositive = length $ filter (cascade `cClass`) invalids
         detectionRate = double nDetected / double nValid
         falsePositiveRate = double nFalsePositive / double nInvalid
     in (detectionRate, falsePositiveRate)

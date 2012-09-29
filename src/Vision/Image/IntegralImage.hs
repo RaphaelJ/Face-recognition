@@ -34,19 +34,19 @@ integralImage image f =
     integral :: ST s (STUArray s (Int, Int) Int64)
     integral = do
         arr <- newArray ((0, 0), (h, w)) 0
-        
+
         forM_ [1..h] $ \y -> do
             colSumRef <- newSTRef 0
             forM_ [1..w] $ \x -> do
                 let pix = value (x-1) (y-1)
                 top <- readArray arr (y-1, x)
-                
+
                 modifySTRef colSumRef (+ pix)
                 colSum <- readSTRef colSumRef
                 writeArray arr (y, x) (colSum + top)
-        
+
         return arr
-    
+
 --  This pure implementation is not as efficient and uses a lot of memory.
 --
 --     uintegral = listArray (bounds integral) (elems integral)

@@ -6,7 +6,8 @@ module Vision.Haar.Window (
     -- * Constants
     , windowWidth, windowHeight, sizeIncr, moveIncr, maxPyramDeep
     -- * Functions
-    , getValue, normalizeSum, windows, randomWindows, nWindows
+    , getValue, normalizeSum, windows, randomWindows, randomImagesWindows
+    , nWindows
     ) where
 
 -- import Data.Array.IArray (listArray, (!))
@@ -14,7 +15,7 @@ module Vision.Haar.Window (
 import Data.Int
 import Data.List
 import Data.Ratio
-import System.Random (RandomGen, randomR)
+import System.Random (RandomGen, randomR, next, mkStdGen)
 
 import qualified Vision.Image as I
 import qualified Vision.Image.IntegralImage as II
@@ -172,6 +173,33 @@ randomWindows initGen ii sqii
 
     imageSize = II.originalSize ii
 -- {-# INLINE randomWindows #-}
+
+-- | Given a list of integral images, returns an infinite random list of
+-- windows.
+-- The first window comes from the first image, the second window from
+-- the second image and so on.
+randomImagesWindows :: RandomGen g =>
+                       g -> [(II.IntegralImage, II.IntegralImage)] -> [Win]
+randomImagesWindows gen imgs =
+    go imgsWindows []
+    where
+    -- Consumes the list of infinite lists of windows by taking a window
+    -- from each list at a time.
+    -- > [ [a1, a2, a3 ..], [b1, b2, b3 ..], [c1, c2, c3 ..] ]
+    -- becomes:
+    -- > [ a1, b1, c1, a2, b2, c2, a3, b3, c3 .. ]
+    go []           acc =
+        go (reverse acc) []
+    go ~((x:xs):ys) acc =
+        x : go ys (xs:acc)
+
+    -- Returns the list of the infinite random lists of windows for each
+    -- image.
+    imgsWindows = [ randomWindows (mkStdGen (rand * i)) ii sqii
+        | (i, (ii, sqii)) <- zip [1..] imgs
+        ]
+
+    rand = fst $ next gen
 
 -- | Returns the number of different windows in an image of the given size.
 nWindows :: Size -> Int
