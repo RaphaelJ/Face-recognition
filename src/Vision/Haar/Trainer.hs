@@ -99,4 +99,4 @@ train directory savePath = do
         files <- (sort . excludeHidden) `fmap` getDirectoryContents dir
         mapM (I.load . (dir </>)) files
 
-    excludeHidden = filter (((/=) '.') . head)q
+    excludeHidden = filter (((/=) '.') . head)

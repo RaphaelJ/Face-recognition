@@ -9,6 +9,7 @@ main = do
         [dir, out] -> do
             train dir out
         _     -> do
-            putStrLn "Train a Haar cascade to <out file> using the training"
-            putStrLn "images located in <training dir> (which contains a )."
+            putStrLn "Trains a Haar cascade to <out file> using the training"
+            putStrLn "images located in <training dir> (which contains a good/"
+            putStrLn "and a bad/ directory)."
             putStrLn "Usage: HaarTrainer <training dir> <out file>"
