@@ -82,9 +82,9 @@ objectConfidence (StrongClassifier cs _) window =
     sum [ w | (c, w) <- cs, c `cClass` window ]
 
 maxFalsePositive, stageMaxFalsePositive, stageMinDetection :: Rational
-maxFalsePositive = 0.000005
+maxFalsePositive = 0.00001
 stageMaxFalsePositive = 0.6
-stageMinDetection = 0.998
+stageMinDetection = 0.995
 
 trainHaarCascade :: -- | Valid integral images (identity and squared).
                     [(II.IntegralImage, II.IntegralImage)]

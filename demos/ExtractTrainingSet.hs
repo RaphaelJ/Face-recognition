@@ -18,13 +18,13 @@ main = do
     case args of
         [inputDir, outputDir] -> do
             paths <- excludeHidden `fmap` getDirectoryContents inputDir
-            
+
             sizes <- forM paths $ \path -> do
                 let hash = sha1 $ pack path
                 let outPath = show hash ++ ".png"
-                
+
                 exists <- doesFileExist $ outputDir </> outPath
-                
+
                 if not exists then do
                     image <- I.load (inputDir </> path) :: IO I.GreyImage
                     let image' = resizeImage image

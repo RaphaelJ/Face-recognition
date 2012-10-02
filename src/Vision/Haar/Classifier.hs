@@ -40,11 +40,6 @@ instance Classifier HaarClassifier Win Bool where
         in stump `cClassScore` value
     {-# INLINE cClassScore #-}
 
--- | Defines how the features list must be divided so only a chunk is running
--- on each core when training using parallel computing.
-chunksSize :: Int
-chunksSize = length features `quot` numCapabilities
-
 {-# SPECIALIZE trainDecisionStump :: [(TrainingTest Int64 Bool, Weight)]
                                   -> (DecisionStump Int64, Score) #-}
 
@@ -63,7 +58,7 @@ trainHaarClassifier ts =
         let strategy = evalTuple2 rseq rseq
            -- parMap will cause a space leak because each feature will be
            -- evaluated at the same time.
-        in map featureStump features `using` parListChunk chunksSize strategy
+        in map featureStump features `using` parListChunk 1000 strategy
 
     -- Trains the best 'DecisionStump' for one feature and the set of tests.
     featureStump f =

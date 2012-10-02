@@ -42,8 +42,6 @@ train directory savePath = do
     putStrLn $ show nBadWindows ++ " windows)"
 
     let (goodTraining, goodTesting) = splitTests 0.90 good
-    let nGoodTesting = length goodTesting
-
     let (badTraining, badTesting) = splitTests 0.90 bad
 
     let goodTestingWindows = concatMap (uncurry windows) goodTesting
