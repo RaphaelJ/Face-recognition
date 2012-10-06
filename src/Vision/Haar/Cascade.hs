@@ -82,9 +82,9 @@ objectConfidence (StrongClassifier cs _) window =
     sum [ w | (c, w) <- cs, c `cClass` window ]
 
 maxFalsePositive, stageMaxFalsePositive, stageMinDetection :: Rational
-maxFalsePositive = 0.00001
-stageMaxFalsePositive = 0.6
-stageMinDetection = 0.995
+maxFalsePositive = 0.00002
+stageMaxFalsePositive = 0.50
+stageMinDetection = 0.99
 
 trainHaarCascade :: -- | Valid integral images (identity and squared).
                     [(II.IntegralImage, II.IntegralImage)]
@@ -166,7 +166,7 @@ trainHaarCascade validImgs invalidImgs =
         , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
         ]
 
-    -- Returns an generator of random 'TrainingImage' from the non faces 
+    -- Returns a generator of random 'TrainingImage' from the non object
     -- images and the number of images and different random windows.
     -- The rand parameter imposes to the function to not be a CAF, which would
     -- make a memory overflow.

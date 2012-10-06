@@ -55,8 +55,8 @@ train directory savePath = do
 
     let stages = hcaStages cascade
 
-    -- Prints the stages of the cascade at the same time they are computed
-    -- and test the current cascade on the testing set.
+    -- Prints and saves the stages of the cascade at the same time they are 
+    -- computed and tests the current cascade on the testing set.
     forM_ (zip [1..] stages) $ \(i, s) -> do
         let nFeatures = length $ scClassifiers $ hcsClassifier s
         putStrLn $ "New stage: " ++ show nFeatures ++ " features"
@@ -68,8 +68,7 @@ train directory savePath = do
         putStrLn $ "Detection rate: " ++ show (fst score)
         putStrLn $ "False positive rate: " ++ show (snd score)
 
-    putStrLn "Save cascade ..."
-    saveHaarCascade savePath cascade
+        saveHaarCascade savePath curCascade
   where
     -- Computes the integral images for each image and its horizontal mirror
     -- from the good/ directory.

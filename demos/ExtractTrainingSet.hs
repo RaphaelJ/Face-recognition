@@ -35,9 +35,9 @@ main = do
                     putStrLn $ path ++ " -> " ++ outPath ++ " (exists)"
                     image' <- I.load (outputDir </> outPath) :: IO I.GreyImage
                     return $ I.getSize image'
-            
+
             putStrLn $ show (length paths) ++ " images(s)"
-            
+
             putStrLn $ show (sum $ map nWindows sizes) ++ " window(s)"
         _ -> do
             putStrLn "Prepares images to be used by the HaarTrainer (converts"

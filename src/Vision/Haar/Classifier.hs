@@ -16,8 +16,6 @@ import Data.Function
 import Data.Int
 import Data.List
 
-import GHC.Conc (numCapabilities)
-
 import AI.Learning.Classifier (
       TrainingTest (..), Classifier (..), Weight, Score
     )
