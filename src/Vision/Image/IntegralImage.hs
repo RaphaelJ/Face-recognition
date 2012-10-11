@@ -50,7 +50,7 @@ integralImage image f =
 --  This pure implementation is not as efficient and uses a lot of memory.
 --
 --     uintegral = listArray (bounds integral) (elems integral)
---       
+--
 --     integral :: Array (Int, Int) Int64
 --     integral = array ((0, 0), (h, w)) (topValues ++ leftValues ++ values)
 -- 
@@ -93,7 +93,7 @@ instance I.Pixel Int64 Int64 where
 
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
-       
+
 -- | Computes the sum of values inside a rectangle using an 'IntegralImage'.
 sumRectangle :: IntegralImage -> Rect -> Int64
 sumRectangle ii (Rect x y w h) =

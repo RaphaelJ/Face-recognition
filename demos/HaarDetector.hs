@@ -34,6 +34,7 @@ detectFaces :: HaarCascade -> FilePath -> FilePath -> IO ()
 detectFaces cascade imagePath outPath = do
     i <- I.load imagePath :: IO G.GreyImage
     let rs = detect cascade i
+    print $ length rs
     I.save (drawRectangles i (map fst rs)) outPath
     putStrLn outPath
     print rs

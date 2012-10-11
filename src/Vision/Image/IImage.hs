@@ -43,16 +43,15 @@ class Pixel p a => Image i p a | i -> p a where
     force :: i -> i
 
     toList i = map (i `unsafeGetPixel`) (sizeRange $ getSize i)
-    {-# INLINE toList #-} 
+    {-# INLINE toList #-}
 
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
     {-# INLINE fromFunction #-}
 
     unsafeGetPixel = getPixel
-    {-# INLINE unsafeGetPixel #-} 
+    {-# INLINE unsafeGetPixel #-}
 
     force = undefined
-    {-# INLINE force #-}
 
 -- | Permits the application of a function to each value 'a' of a pixel 'p'.
 -- Used to apply a transformation to each channel of an image.
@@ -87,7 +86,7 @@ instance (Convertible IL.Image i, Convertible i IL.Image)
         IL.runIL $ convert `fmap` IL.readImage path
     {-# INLINE load #-}
 
-    save i path = 
+    save i path =
         IL.runIL $ IL.writeImage path (convert i)
     {-# INLINE save #-}
 

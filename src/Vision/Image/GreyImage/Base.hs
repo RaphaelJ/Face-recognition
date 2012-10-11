@@ -25,39 +25,39 @@ instance I.Image GreyImage Word8 Word8 where
     fromList size xs =
         GreyImage $ delay $ fromListUnboxed (imageShape size) xs
     {-# INLINE fromList #-}
-    
+
     fromFunction size f =
         GreyImage $ fromFunction (imageShape size) $ \(Z :. y :. x) ->
             f $ Point x y
     {-# INLINE fromFunction #-}
-    
+
     getSize (GreyImage image) =
         let (Z :. h :. w) = extent image
         in Size w h
     {-# INLINE getSize #-}
-        
+
     GreyImage image `getPixel` Point x y =
         image ! (Z :. y :. x)
     {-# INLINE getPixel #-}
-    
+
     GreyImage image `unsafeGetPixel` Point x y =
         image `unsafeIndex` (Z :. y :. x)
     {-# INLINE unsafeGetPixel #-}  
-    
+
     force (GreyImage image) = 
         GreyImage $ delay $ computeUnboxedS image
     {-# INLINE force #-}
-    
+
 instance I.Pixel Word8 Word8 where
     pixToValues pix = [pix]
     {-# INLINE pixToValues #-}
-    
+
     valuesToPix ~(pix:_) = pix
     {-# INLINE valuesToPix #-}
-    
+
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
-    
+
 {-# SPECIALIZE I.resize :: GreyImage -> Size -> GreyImage #-}
 {-# SPECIALIZE I.horizontalFlip :: GreyImage -> GreyImage #-}
 

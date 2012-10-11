@@ -49,6 +49,11 @@ data HaarCascadeStage = HaarCascadeStage {
     , hcsThreshold :: !Score
     } deriving (Show, Read)
 
+maxFalsePositive, stageMaxFalsePositive, stageMinDetection :: Rational
+maxFalsePositive = 0.00002
+stageMaxFalsePositive = 0.50
+stageMinDetection = 0.99
+
 -- | The 'HaarCascade' is able to classify a part of an image using its 
 -- iteration window by evaluating each stage in cascade.
 -- The classifier score is 
@@ -65,7 +70,7 @@ instance Classifier HaarCascade Win Bool where
                   else (False, 1 - ((sumScores + 1 - score) / nStages'))
 
 -- | The 'HaarCascadeStage' validate the window if the score of the 
--- 'StrongClassifier' is greater than the threshold. 
+-- 'StrongClassifier' is greater than the threshold.
 instance Classifier HaarCascadeStage Win Bool where
     HaarCascadeStage sc thres `cClassScore` window =
         let !stageScore = objectConfidence sc window
@@ -76,16 +81,13 @@ instance Classifier HaarCascadeStage Win Bool where
 
 -- | Returns the confidence score that the strong classifier gives about the 
 -- object nature of a window. The confidence score is the sum of the weight
--- of weak classifiers which validate the windows.
+-- of weak classifiers which validate the window.
 objectConfidence :: StrongClassifier HaarClassifier -> Win -> Score
 objectConfidence (StrongClassifier cs _) window =
     sum [ w | (c, w) <- cs, c `cClass` window ]
 
-maxFalsePositive, stageMaxFalsePositive, stageMinDetection :: Rational
-maxFalsePositive = 0.00002
-stageMaxFalsePositive = 0.50
-stageMinDetection = 0.99
-
+-- | Trains an 'HaarCascade' using a set of valid and invalid images.
+-- Adds new stages to the cascade until 'maxFalsePositive' is not obtained.
 trainHaarCascade :: -- | Valid integral images (identity and squared).
                     [(II.IntegralImage, II.IntegralImage)]
                     -- | Invalid integral images.
@@ -103,7 +105,7 @@ trainHaarCascade validImgs invalidImgs =
             currCascade = HaarCascade (take nStages stages)
             isFalsePositive = (currCascade `cClass`) . tTest
             !invalids =
-                take nValid $ filter isFalsePositive (invalidsGen nStages)
+                take nValid $ filter isFalsePositive $ invalidsGen nStages
 
             -- Trains the new stage with the set of tests.
             sc = tail $ adaBoost (invalids ++ valids) trainHaarClassifier
@@ -163,7 +165,7 @@ trainHaarCascade validImgs invalidImgs =
 
     -- Initialises a window for each valid image.
     valids = [ TrainingTest w True | (ii, sqii) <- validImgs
-        , let w = win (Rect 0 0 windowWidth windowHeight) ii sqii
+        , let !w = win (Rect 0 0 windowWidth windowHeight) ii sqii
         ]
 
     -- Returns a generator of random 'TrainingImage' from the non object
@@ -171,7 +173,7 @@ trainHaarCascade validImgs invalidImgs =
     -- The rand parameter imposes to the function to not be a CAF, which would
     -- make a memory overflow.
     invalidsGen rand = [ TrainingTest w False
-        | w <- randomImagesWindows (mkStdGen rand) invalidImgs
+        | !w <- randomImagesWindows (mkStdGen rand) invalidImgs
         ]
 
 -- | Gives the statistics (detection rate, false positive rate) of an

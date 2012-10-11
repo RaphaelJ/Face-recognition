@@ -32,7 +32,7 @@ instance Convertible RGB.RGBImage GreyImage where
             word8 $ rgbToGrey r g b
         {-# INLINE pixFromRGB #-}
     {-# INLINE safeConvert #-}
-    
+
 -- | Converts the colors to greyscale using the human eye perception of colors.
 rgbToGrey :: Word8 -> Word8 -> Word8 -> Int
 rgbToGrey r g b = (int r * 30 + int g * 59 + int b * 11) `quot` 100

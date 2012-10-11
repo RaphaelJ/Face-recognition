@@ -26,7 +26,7 @@ detect cascade image =
         valids = [ (r, s) | !w <- windows integral squaredIintegral
             , let r = wRect w, let (!v, s) = cascade `cClassScore` w, v
             ]
-    in groupRectangles valids
+    in {-groupRectangles -}valids
 
 -- | Groups overlapping rectangles. Keeps the rectangle with the largest 
 -- score for each group.

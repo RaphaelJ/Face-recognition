@@ -29,7 +29,8 @@ data Win = Win {
 
 --     -- | Values ([0;255]) of the cumulative normal distribution for each
 --     -- pixels values ([0; 255]) based on the average and the standard derivation
---     -- of the 'Win' pixels values.
+--     -- of the 'Win' pixels values. The normal distribution is an approximation
+--     -- of the window\'s histogram.
 --     -- 
 --     -- Used to equalise the values inside 'Win' histogram. This will return the
 --     -- value of the pixel of value @x@ in the equalised distribution:
@@ -78,8 +79,8 @@ win rect@(Rect _ _ w h) ii sqii =
 --     -- distribution = tail $ scanl (\acc x -> acc + normal x * 255) 0 [0..255]
 --     distribution = go 0 0
 --     go acc x | x > 255   = []
---             | otherwise = let !acc' = acc + normal x * 255
---                         in acc' : go acc' (x + 1)
+--              | otherwise = let !acc' = acc + normal x * 255
+--                            in acc' : go acc' (x + 1)
 
 -- | Gets the value of a point (in default window coordinates) inside a window.
 getValue :: Win -> Point -> (Int64, Int)

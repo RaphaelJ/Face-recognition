@@ -12,7 +12,7 @@ import Vision.Image.GreyImage.Base (GreyImage (..))
 import Vision.Image.GreyImage.Conversion ()
 import Vision.Image.RGBImage.Base as RGB
 import Vision.Image.RGBAImage.Base as RGBA
-    
+
 -- | Converts an DevIL image to a grey image.
 instance Convertible IL.Image GreyImage where
     safeConvert (IL.RGB i) = return $! convert $ RGB.RGBImage $ delay i
