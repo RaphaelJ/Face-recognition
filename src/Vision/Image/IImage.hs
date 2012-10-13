@@ -42,7 +42,7 @@ class Pixel p a => Image i p a | i -> p a where
     -- 'undefined'). Useful for images with a delayed representation.
     force :: i -> i
 
-    toList i = map (i `unsafeGetPixel`) (sizeRange $ getSize i)
+    toList image = map (image `unsafeGetPixel`) (sizeRange $ getSize image)
     {-# INLINE toList #-}
 
     fromFunction size f = fromList size [ f p | p <- sizeRange size ]
@@ -90,6 +90,14 @@ instance (Convertible IL.Image i, Convertible i IL.Image)
         IL.runIL $ IL.writeImage path (convert i)
     {-# INLINE save #-}
 
+-- | Checks that the point is in the image.
+inImage :: Image i p a => Point -> i -> Bool
+Point x y `inImage` image =
+    let Size w h = getSize image
+       -- Casts to unsigned to removes the lower bound check.
+    in word x < word w && word y < word h
+{-# INLINE inImage #-}
+
 -- | Uses a bilinear interpolation to find the value of the pixel at the
 -- floating point coordinates.
 -- Estimates the value of P using A, B, C and D :
@@ -100,15 +108,13 @@ instance (Convertible IL.Image i, Convertible i IL.Image)
 -- s ------ t
 bilinearInterpol, unsafeBilinearInterpol 
     :: (Image i p a, Integral a) => i -> DPoint -> p
-i `bilinearInterpol` p@(DPoint x y) = 
-    if x >= 0 && y >= 0 && x < fromIntegral w && y < fromIntegral h
-       then i `unsafeBilinearInterpol` p
+image `bilinearInterpol` p@(DPoint x y) =
+    if Point (truncate x) (truncate y) `inImage` image
+       then image `unsafeBilinearInterpol` p
        else error "Invalid index"
-  where
-    Size w h = getSize i
 
 -- | Uses a bilinear interpolation without checking bounds.
-i `unsafeBilinearInterpol` DPoint x y =
+image `unsafeBilinearInterpol` DPoint x y =
     valuesToPix $ interpolateChannels qs rs ss ts
   where
     (x1, y1) = (truncate x, truncate y)
@@ -127,10 +133,10 @@ i `unsafeBilinearInterpol` DPoint x y =
               q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y)
             + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
 
-    qs = pixToValues $ i `unsafeGetPixel` Point x1 y1
-    rs = pixToValues $ i `unsafeGetPixel` Point x2 y1
-    ss = pixToValues $ i `unsafeGetPixel` Point x1 y2
-    ts = pixToValues $ i `unsafeGetPixel` Point x2 y2
+    qs = pixToValues $ image `unsafeGetPixel` Point x1 y1
+    rs = pixToValues $ image `unsafeGetPixel` Point x2 y1
+    ss = pixToValues $ image `unsafeGetPixel` Point x1 y2
+    ts = pixToValues $ image `unsafeGetPixel` Point x2 y2
 {-# INLINE bilinearInterpol #-}
 {-# INLINE unsafeBilinearInterpol #-}
 
@@ -183,3 +189,5 @@ horizontalFlip image =
 
 double :: Integral a => a -> Double
 double = fromIntegral
+word :: Integral a => a -> Word
+word = fromIntegral

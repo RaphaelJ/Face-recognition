@@ -10,7 +10,7 @@ module Vision.Histogram (
     -- * Histogram computations
     , calcHist, cumulatHist, roundHist, equalizeHist
     -- * Histogram comparaisons
-    , compareCorrel, compareChi, compareIntersect
+    , compareCorrel, compareChi, compareIntersect, compareLogLikelihood
     -- * Images processing
     , equalizeImage
     ) where
@@ -97,10 +97,21 @@ compareIntersect :: (IArray UArray a, Num a, Ord a) =>
                     Histogram a -> Histogram a -> a
 compareIntersect hist1 hist2 =
     sum [ min v1 v2 | v1 <- elems hist1 | v2 <- elems hist2 ]
-{-# SPECIALIZE compareIntersect :: 
+{-# SPECIALIZE compareIntersect ::
     Histogram Int -> Histogram Int -> Int #-}
 {-# SPECIALIZE compareIntersect ::
     Histogram Double -> Histogram Double -> Double #-}
+
+-- | Computes the Log-likelihood distance between two histograms.
+-- log-likelihood = SUM (H1(i) * log (H2(i)))
+compareLogLikelihood :: (IArray UArray a, Integral a) =>
+                        Histogram a -> Histogram a -> Double
+compareLogLikelihood hist1 hist2 = - sum [
+          (double v1) * log (double v2)
+        | v1 <- elems hist1 | v2 <- elems hist2
+        ]
+{-# SPECIALIZE compareLogLikelihood ::
+    Histogram Int -> Histogram Int -> Double #-}
 
 -- | Normalizes a greyscale image by equalizing the histogram.
 -- The algorithm normalizes the brightness and increases the contrast of the

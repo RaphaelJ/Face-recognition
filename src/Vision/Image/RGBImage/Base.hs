@@ -29,7 +29,7 @@ instance I.Image RGBImage RGBPixel Word8 where
         RGBImage $ delay $ fromListUnboxed (imageShape size) $ 
             concat [ [r, g, b] | RGBPixel r g b <- xs ]
     {-# INLINE fromList #-}
-    
+
     fromFunction size f =
         RGBImage $ fromFunction (imageShape size) $ \(Z :. y :. x :. c) ->
             let point = Point x y

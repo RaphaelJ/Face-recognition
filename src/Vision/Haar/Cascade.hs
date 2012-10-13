@@ -4,6 +4,8 @@
 
 -- | Contains everything to train and use a cascade of 'HaarClassifier'.
 -- The cascade is composed of 'StrongClassifier's build on 'HaarClassifier's.
+-- The 'HaarCascade' is explained in
+-- /Viola, Jones: Robust Real-time Object Detection, IJCV 2001/
 module Vision.Haar.Cascade (
     -- * Types & constructors
       HaarCascade (..), HaarCascadeStage (..)
