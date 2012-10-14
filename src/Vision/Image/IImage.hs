@@ -119,7 +119,7 @@ image `unsafeBilinearInterpol` DPoint x y =
   where
     (x1, y1) = (truncate x, truncate y)
     (x2, y2) = (x1 + 1, y1 + 1)
-    (d_x1, d_y1, d_x2, d_y2) =
+    (dX1, dY1, dX2, dY2) =
         (double x1, double y1, double x2, double y2)
 
     -- Interpolate each channel of the four pixels.
@@ -130,15 +130,15 @@ image `unsafeBilinearInterpol` DPoint x y =
         let (q', r') = (double q, double r)
             (s', t') = (double s, double t)
         in round $
-              q' * (d_x2 - x) * (d_y2 - y) + r' * (x - d_x1) * (d_y2 - y)
-            + s' * (d_x2 - x) * (y - d_y1) + t' * (x - d_x1) * (y - d_y1)
+              q' * (dX2 - x) * (dY2 - y) + r' * (x - dX1) * (dY2 - y)
+            + s' * (dX2 - x) * (y - dY1) + t' * (x - dX1) * (y - dY1)
 
     qs = pixToValues $ image `unsafeGetPixel` Point x1 y1
     rs = pixToValues $ image `unsafeGetPixel` Point x2 y1
     ss = pixToValues $ image `unsafeGetPixel` Point x1 y2
     ts = pixToValues $ image `unsafeGetPixel` Point x2 y2
 {-# INLINE bilinearInterpol #-}
-{-# INLINE unsafeBilinearInterpol #-}
+{-# INLINABLE unsafeBilinearInterpol #-}
 
 -- | Resizes the 'Image' using a bilinear interpolation.
 resize :: (Image i p a, Integral a) => i -> Size -> i

@@ -61,24 +61,25 @@ instance I.Image RGBImage RGBPixel Word8 where
             , rgbBlue = image `unsafeIndex` (coords :. 2)
         }
     {-# INLINE unsafeGetPixel #-}
-    
+
     force (RGBImage image) = 
         RGBImage $ delay $ computeUnboxedS image
     {-# INLINE force #-}
-    
+
 instance I.Pixel RGBPixel Word8 where
     pixToValues (RGBPixel r g b) = [r, g, b]
     {-# INLINE pixToValues #-}
-    
+
     valuesToPix ~(r : g : b : _) = RGBPixel r g b
     {-# INLINE valuesToPix #-}
-    
+
     RGBPixel r g b `pixApply` f = RGBPixel (f r) (f g) (f b)
     {-# INLINE pixApply #-}
-    
+
+{-# SPECIALIZE I.unsafeBilinearInterpol :: RGBImage -> DPoint -> RGBPixel #-}
 {-# SPECIALIZE I.resize :: RGBImage -> Size -> RGBImage #-}
 {-# SPECIALIZE I.horizontalFlip :: RGBImage -> RGBImage #-}
-    
+
 -- | Returns the shape of an image of the given size.
 imageShape :: Size -> DIM3
 imageShape (Size w h) = Z :. h :. w :. 3

@@ -58,6 +58,7 @@ instance I.Pixel Word8 Word8 where
     pix `pixApply` f = f pix
     {-# INLINE pixApply #-}
 
+{-# SPECIALIZE I.unsafeBilinearInterpol :: GreyImage -> DPoint -> GreyPixel #-}
 {-# SPECIALIZE I.resize :: GreyImage -> Size -> GreyImage #-}
 {-# SPECIALIZE I.horizontalFlip :: GreyImage -> GreyImage #-}
 
