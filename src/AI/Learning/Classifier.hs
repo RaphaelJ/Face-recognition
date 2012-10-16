@@ -5,6 +5,8 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+-- | Defines classes and types which are used by learning algorithm which 
+-- produce classifiers.
 module AI.Learning.Classifier (
     -- * Classes
       Classifier (..)
