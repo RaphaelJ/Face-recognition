@@ -13,7 +13,7 @@ import Data.Array.Repa (
     )
 
 import qualified Vision.Image.IImage as I
-import Vision.Primitive (Point (..), Size (..))
+import Vision.Primitive (Point (..), DPoint, Size (..))
 
 -- | RGB image (y :. x :. channel).
 newtype RGBImage = RGBImage (Array D DIM3 Word8)

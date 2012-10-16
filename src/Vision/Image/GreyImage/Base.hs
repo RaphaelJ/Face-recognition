@@ -15,7 +15,7 @@ import Data.Array.Repa (
     )
 
 import qualified Vision.Image.IImage as I
-import Vision.Primitive (Point (..), Size (..))
+import Vision.Primitive (Point (..), DPoint, Size (..))
 
 -- | Greyscale image (y :. x).
 newtype GreyImage = GreyImage (Array D DIM2 Word8)

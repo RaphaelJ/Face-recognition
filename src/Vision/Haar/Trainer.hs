@@ -89,7 +89,7 @@ train directory savePath = do
 
     integralImages img =
         let ii = II.integralImage img id
-            sqii = II.integralImage img (^(2 :: Int))
+            sqii = II.integralImage img (\x -> x * x)
         in (ii, sqii)
 
     loadImages dir = do

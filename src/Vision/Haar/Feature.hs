@@ -22,8 +22,8 @@ data HaarFeature = TwoVertRect {-# UNPACK #-} !Rect
     deriving (Show, Read, Eq)
 
 sizeMult, moveMult :: Int
-sizeMult = 5
-moveMult = 5
+sizeMult = 2
+moveMult = 2
 
 compute :: HaarFeature -> W.Win -> Int64
 compute (TwoVertRect (Rect x y w h)) win =

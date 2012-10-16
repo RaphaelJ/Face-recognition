@@ -51,7 +51,7 @@ adaBoost initTrainingSet weakSelector = [ StrongClassifier cs' w
 
 -- | One step : selects a new weak classifier, update the weights.
 selectClassifiers :: (Classifier c t cl, Eq cl) =>
-                     [(TrainingTest t cl, Weight)] 
+                     [(TrainingTest t cl, Weight)]
                   -> ([(TrainingTest t cl, Weight)] -> (c, Score))
                   -> [(c, Score)]
 selectClassifiers trainingSet weakSelector =

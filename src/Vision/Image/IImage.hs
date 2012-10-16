@@ -10,12 +10,13 @@ module Vision.Image.IImage (
     -- * Types classes
       Image (..), Pixel (..), StorableImage (..), Convertible (..)
     -- * Functions
-    , convert, bilinearInterpol
+    , convert, inImage, bilinearInterpol, unsafeBilinearInterpol
     -- * Misc images transformations
     , resize, drawRectangle, horizontalFlip
     ) where
 
 import Data.Convertible (Convertible (..), convert)
+import Data.Word
 
 import Vision.Primitive (
       Point (..), DPoint (..), Size (..), Rect (..), sizeRange
@@ -109,7 +110,7 @@ Point x y `inImage` image =
 bilinearInterpol, unsafeBilinearInterpol 
     :: (Image i p a, Integral a) => i -> DPoint -> p
 image `bilinearInterpol` p@(DPoint x y) =
-    if Point (truncate x) (truncate y) `inImage` image
+    if Point ((truncate x) + 1) ((truncate y) + 1) `inImage` image
        then image `unsafeBilinearInterpol` p
        else error "Invalid index"
 

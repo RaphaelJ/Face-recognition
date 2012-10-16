@@ -126,14 +126,14 @@ trainHaarCascade validImgs invalidImgs =
     -- For each new weak classifier, decrease the threshold of the 
     -- 'StrongClassifier' until the stage reaches the minimum level of 
     -- detection.
-    trainStage ~(sc:scs) invalids =
+    trainStage ~(!sc:scs) invalids =
         let -- Valid faces scores, sorted, descending.
             scores = reverse $ sort $ map (objectConfidence sc . tTest) valids
 
             groupedScores = [ (head s, length s) | s <- group scores ]
 
             -- Number of not detected valid tests for each threshold.
-            thresholdsNotDetected = 
+            thresholdsNotDetected =
                 -- Starts with an infinite threshold so each face is not 
                 -- detected.
                 let infinity = 1/0
@@ -152,11 +152,11 @@ trainHaarCascade validImgs invalidImgs =
             Just (!threshold, _) =
                 find ((>= stageMinDetection) . snd) thresholdsRate
 
-            !stage = HaarCascadeStage sc threshold
+            stage = HaarCascadeStage sc threshold
 
-            !nFalsePositive = 
+            nFalsePositive =
                 length $ filter ((stage `cClass`) . tTest) invalids
-            !falsePositive = integer nFalsePositive % integer nValid
+            falsePositive = integer nFalsePositive % integer nValid
         in if falsePositive > stageMaxFalsePositive
               -- Add a new weak classifier if the false positive rate is too
               -- high.

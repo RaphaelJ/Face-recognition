@@ -22,7 +22,7 @@ import Vision.Primitive (Rect (..))
 detect :: HaarCascade -> G.GreyImage -> [(Rect, Score)]
 detect cascade image =
     let integral = II.integralImage image id
-        squaredIintegral = II.integralImage image (^(2 :: Int))
+        squaredIintegral = II.integralImage image (\x -> x * x)
         valids = [ (r, s) | !w <- windows integral squaredIintegral
             , let r = wRect w, let (!v, s) = cascade `cClassScore` w, v
             ]
