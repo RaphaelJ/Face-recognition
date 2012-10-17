@@ -2,14 +2,14 @@
 
 -- | Contains functions to compute and manipulate histograms as well as some
 -- images transformations which are histograms-based.
--- Every polymorphic function is specialized for histograms of 'Int' and
+-- Every polymorphic function is specialised for histograms of 'Int' and
 -- histograms of 'Double'.
 module Vision.Histogram (
     -- * Types
       Histogram
     -- * Histogram computations
     , calcHist, cumulatHist, roundHist, equalizeHist
-    -- * Histogram comparaisons
+    -- * Histogram comparisons
     , compareCorrel, compareChi, compareIntersect, compareLogLikelihood
     -- * Images processing
     , equalizeImage
@@ -24,7 +24,7 @@ import Vision.Image (fromFunction, getSize, toList, unsafeGetPixel)
 
 type Histogram a = UArray Int a
 
--- | Computes an histogram from a greyscale image. The index range of the
+-- | Computes an histogram from a grey scale image. The index range of the
 -- histogram is [0; 255].
 calcHist :: GreyImage -> Histogram Int
 calcHist = accumArray (+) 0 (0, 255) . map (\e -> (int e, 1)) . toList
@@ -59,7 +59,7 @@ equalizeHist hist =
 -- | Computes the Pearson\'s correlation coefficient
 -- between each corresponding bins of the two histograms.
 -- A value of 1 implies a perfect correlation, a value of -1 a perfect
--- oposition and a value of 0 no correlation at all.
+-- opposition and a value of 0 no correlation at all.
 -- See <http://en.wikipedia.org/wiki/Pearson_correlation_coefficient>.
 compareCorrel :: (IArray UArray a, Integral a) =>
                  Histogram a -> Histogram a -> Double
@@ -113,12 +113,12 @@ compareLogLikelihood hist1 hist2 = - sum [
 {-# SPECIALIZE compareLogLikelihood ::
     Histogram Int -> Histogram Int -> Double #-}
 
--- | Normalizes a greyscale image by equalizing the histogram.
+-- | Normalizes a grey scale image by equalising the histogram.
 -- The algorithm normalizes the brightness and increases the contrast of the
 -- image by mapping each pixels values to the value at the index of the
--- cummulative equalized histogram :
+-- cumulative equalized histogram :
 -- N(x, y) = H(I(x, y)) where N is the equalized image, I is the image and H the
--- cummulative equalized histogram.
+-- cumulative equalized histogram.
 equalizeImage :: GreyImage -> GreyImage
 equalizeImage image =
     fromFunction (getSize image) equalizePixel

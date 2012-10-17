@@ -13,22 +13,22 @@ import Data.STRef (newSTRef, readSTRef, writeSTRef)
 import System.Random (mkStdGen, randoms, randomR)
 
 -- | Unsort the elements of a list (complexity: O(n)). Runs with a 'MArray'
--- inside the 'ST' monad.
-shuffleList :: [a] -> [a]
+-- inside the 'ST' monad. Must be faster of large list.
+shuffleList :: RandomGen g => [a] -> g
 shuffleList xs =
     elems $ runSTArray $ do
         arr <- newListArray (0, lastIndex) xs
-        genRef <- newSTRef (mkStdGen 1)  
-        
+        genRef <- newSTRef (mkStdGen 1)
+
         -- Takes a random number between i and the last index of the array
         -- and puts the element at this index at the beginning of the array.
         forM_ [0..lastIndex] $ \i -> do
             gen <- readSTRef genRef
             let (j, gen') = randomR (i, lastIndex) gen
             writeSTRef genRef gen'
-            
+
             arr `swap` (i, j)
-            
+
         return arr
   where
     lastIndex = length xs - 1
@@ -40,7 +40,7 @@ shuffleList xs =
 
 -- | Unsort the elements of a list (complexity: O(n * log² n)). Pure version of
 -- 'shuffleList'
-shuffleList' :: [a] -> [a]
+shuffleList' :: RandomGen g => [a] -> g
 shuffleList' =
     map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
   where
