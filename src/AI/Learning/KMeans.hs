@@ -40,9 +40,11 @@ dist a b = sum [ d * d | i <- a | j <- b, let d = i - j ]
 -- coordinates.
 center :: [(Point, Double)] -> Point
 center ps =
-    map (\(xs, w) -> sum xs * w / sumWeights) $ transpose ps $ map 
+    -- Takes the weighted average for each dimensions.
+    map (\(xs, w) -> sum xs / sumWeights) $ transpose weightedPs
   where
-    weightedPs = 
+    -- Each point\'s dimensions multiplied/normalized by their weights.
+    weightedPs = [ (map (* w) xs, w) | (xs, w) <- ps ]
     sumWeights = sum $ map snd ps
 
 -- | Selects a random item from the list, using a associated weight for each
@@ -62,6 +64,17 @@ weightedRandom ps gen =
         in if accWeights' > rand
               then p
               else findRandom accWeights' ps'
+
+-- | Unsort the elements of a list (complexity: O(n * log² n)) which are 
+-- associated with a weight.
+weightedShuffle :: 
+
+shuffleList' :: RandomGen g => [a] -> g
+shuffleList' =
+    map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
+  where
+    gen = mkStdGen 1
+
 
 -- | Divides the list in sublists of the given length (except the last sublist
 -- which will contain the remainder of the original list).
