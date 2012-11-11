@@ -13,7 +13,7 @@ import Data.Array.Repa (
     )
 
 import qualified Vision.Image.IImage as I
-import Vision.Primitive (Point (..), DPoint, Size (..))
+import Vision.Primitive (Point (..), DPoint, Rect, Size (..))
 
 -- | RGB image (y :. x :. channel).
 newtype RGBImage = RGBImage (Array D DIM3 Word8)
@@ -62,7 +62,7 @@ instance I.Image RGBImage RGBPixel Word8 where
         }
     {-# INLINE unsafeGetPixel #-}
 
-    force (RGBImage image) = 
+    force (RGBImage image) =
         RGBImage $ delay $ computeUnboxedS image
     {-# INLINE force #-}
 
@@ -78,6 +78,7 @@ instance I.Pixel RGBPixel Word8 where
 
 {-# SPECIALIZE I.unsafeBilinearInterpol :: RGBImage -> DPoint -> RGBPixel #-}
 {-# SPECIALIZE I.resize :: RGBImage -> Size -> RGBImage #-}
+{-# SPECIALIZE I.crop :: RGBImage -> Rect -> RGBImage #-}
 {-# SPECIALIZE I.horizontalFlip :: RGBImage -> RGBImage #-}
 
 -- | Returns the shape of an image of the given size.

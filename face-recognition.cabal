@@ -1,0 +1,65 @@
+name:              face-recognition
+version:           0.0.0
+license:           GPL-3
+author:            Raphael Javaux
+maintainer:        Raphael Javaux
+synopsis:          Algorithms for face recognition.
+description:       Algorithms for face recognition.
+category:          Machine Vision
+stability:         Experimental
+cabal-version:     >= 1.8
+build-type:        Simple
+homepage:          http://getwebb.yesodweb.com/
+
+library
+    exposed-modules: AI.Learning.AdaBoost
+                     AI.Learning.Classifier
+                     AI.Learning.DecisionStump
+                     -- AI.Learning.KMeans
+                     Vision.Haar.Cascade
+                     Vision.Haar.Classifier
+                     Vision.Haar.Detector
+                     Vision.Haar.Feature
+                     Vision.Haar.Trainer
+                     Vision.Haar.Window
+                     Vision.Histogram
+                     Vision.Image
+                     Vision.Image.GreyImage
+                     Vision.Image.GreyImage.Base
+                     Vision.Image.GreyImage.Conversion
+                     Vision.Image.GreyImage.Storage
+                     Vision.Image.IImage
+                     Vision.Image.IntegralImage
+                     Vision.Image.RGBAImage
+                     Vision.Image.RGBAImage.Base
+                     Vision.Image.RGBAImage.Conversion
+                     Vision.Image.RGBAImage.Storage
+                     Vision.Image.RGBImage
+                     Vision.Image.RGBImage.Base
+                     Vision.Image.RGBImage.Conversion
+                     Vision.Image.RGBImage.Storage
+                     Vision.LQP.Pattern
+                     Vision.Primitive
+
+    ghc-options: -Wall -O2 -fllvm -threaded
+    hs-source-dirs:    src/
+
+    extensions: BangPatterns
+                FlexibleContexts
+                FlexibleInstances
+                FunctionalDependencies
+                MultiParamTypeClasses
+                OverlappingInstances
+                UndecidableInstances
+
+    build-depends: base                          >= 4          && < 5
+                 , array                         >= 0.4        && < 1
+                 , containers                    >= 0.5        && < 1
+                 , convertible                   >= 1          && < 2
+                 , directory                     >= 1.2        && < 2
+                 , filepath                      >= 1.3        && < 2
+                 , mtl                           >= 2.1        && < 3
+                 , parallel                      >= 3.2        && < 4
+                 , random                        >= 1          && < 2
+                 , repa                          >= 3.2        && < 4
+                 , repa-devil                    >= 0.3        && < 1.0

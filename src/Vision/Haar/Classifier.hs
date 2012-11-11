@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- | Contains everything to train and use a 'HaarClassifier'.
 -- A 'HaarClassifier' is a simple 'DecisionStump' which classifies a windows

@@ -1,8 +1,8 @@
 .directory
-*~
+dist
+cabal-dev
 *.o
 *.hi
-test*
-Main
-Detector
-Rotation
+*.chi
+*.chs.h
+*~

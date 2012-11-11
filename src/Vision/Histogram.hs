@@ -85,9 +85,11 @@ compareCorrel hist1 hist2 =
 compareChi :: (IArray UArray a, Integral a) =>
                Histogram a -> Histogram a -> Double
 compareChi hist1 hist2 = sum [
-      double ((v1 - v2)^2) / double (v1 + v2)
+      double (square (v1 - v2)) / double (v1 + v2)
     | v1 <- elems hist1 | v2 <- elems hist2
     ]
+  where
+    square v = v * v
 {-# SPECIALIZE compareChi :: Histogram Int -> Histogram Int -> Double #-}
 
 -- | Computes the intersection of the two histograms.

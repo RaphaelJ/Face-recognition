@@ -14,7 +14,7 @@ import System.Random (mkStdGen, randoms, randomR)
 
 -- | Unsort the elements of a list (complexity: O(n)). Runs with a 'MArray'
 -- inside the 'ST' monad. Must be faster of large list.
-shuffleList :: RandomGen g => [a] -> g
+shuffleList :: [a] -> [a]
 shuffleList xs =
     elems $ runSTArray $ do
         arr <- newListArray (0, lastIndex) xs
@@ -40,7 +40,7 @@ shuffleList xs =
 
 -- | Unsort the elements of a list (complexity: O(n * log² n)). Pure version of
 -- 'shuffleList'
-shuffleList' :: RandomGen g => [a] -> g
+shuffleList' :: [a] -> [a]
 shuffleList' =
     map snd . sortBy (compare `on` fst) . zip (randoms gen :: [Int])
   where

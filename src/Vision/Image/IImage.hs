@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Vision.Image.IImage (
     -- * Types classes
@@ -12,7 +13,7 @@ module Vision.Image.IImage (
     -- * Functions
     , convert, inImage, bilinearInterpol, unsafeBilinearInterpol
     -- * Misc images transformations
-    , resize, drawRectangle, horizontalFlip
+    , resize, crop, drawRectangle, horizontalFlip
     ) where
 
 import Data.Convertible (Convertible (..), convert)
@@ -152,7 +153,18 @@ resize image size'@(Size w' h') =
     Size w h = getSize image
     widthRatio = double w / double w'
     heightRatio = double h / double h'
-{-# INLINABLE resize #-} -- With INLINABLE, the function can be specialised.
+{-# INLINE resize #-} -- With INLINABLE, the function can be specialised.
+
+-- | Maps the content of the image\'s rectangle in a new image.
+crop :: Image i p a => i -> Rect -> i
+crop image (Rect rx ry rw rh) =
+    if rx >= 0 && ry >= 0 && rx + rw <= w && ry + rh <= h
+       then fromFunction (Size rw rh) $ \(Point x' y') ->
+                image `unsafeGetPixel` Point (rx + x') (ry + y')
+       else error "Out of bounds rectangle"
+  where
+    Size w h = getSize image
+{-# INLINE crop #-} -- With INLINABLE, the function can be specialised.
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.
 drawRectangle :: Image i p a => i

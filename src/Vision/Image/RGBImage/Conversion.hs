@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Vision.Image.RGBImage.Conversion () where
 
@@ -19,7 +20,7 @@ instance Convertible G.GreyImage RGBImage where
         pixFromGrey pix = RGBPixel pix pix pix
         {-# INLINE pixFromGrey #-}
     {-# INLINE safeConvert #-}
-    
+
 -- | Converts a RGBA image to RGB.
 instance Convertible R.RGBAImage RGBImage where
     safeConvert image =

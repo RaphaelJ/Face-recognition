@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Vision.Image.GreyImage.Base (
     -- * Types & constructors
@@ -15,7 +16,7 @@ import Data.Array.Repa (
     )
 
 import qualified Vision.Image.IImage as I
-import Vision.Primitive (Point (..), DPoint, Size (..))
+import Vision.Primitive (Point (..), DPoint, Rect, Size (..))
 
 -- | Greyscale image (y :. x).
 newtype GreyImage = GreyImage (Array D DIM2 Word8)
@@ -60,6 +61,7 @@ instance I.Pixel Word8 Word8 where
 
 {-# SPECIALIZE I.unsafeBilinearInterpol :: GreyImage -> DPoint -> GreyPixel #-}
 {-# SPECIALIZE I.resize :: GreyImage -> Size -> GreyImage #-}
+{-# SPECIALIZE I.crop :: GreyImage -> Rect -> GreyImage #-}
 {-# SPECIALIZE I.horizontalFlip :: GreyImage -> GreyImage #-}
 
 -- | Returns the shape of an image of the given size.

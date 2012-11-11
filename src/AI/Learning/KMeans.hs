@@ -1,7 +1,7 @@
 -- | Gives an implementation of a generic k-means clustering algorithm.
 -- See <http://en.wikipedia.org/wiki/K-means_clustering> for implementation\'s
 -- details.
-module Learning.KMeans (
+module AI.Learning.KMeans (
       Point, KMeansFlag (..)
     , kmeans, weightedKmeans, dist
     ) where

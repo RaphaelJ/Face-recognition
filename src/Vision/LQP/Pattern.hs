@@ -143,7 +143,7 @@ getCode Disk5 image pt@(Point x y) =
         (x1, x2, x3, x4) = (x-2, x-1, x+1, x+2)
         (y1, y2, y3, y4) = (y-2, y-1, y+1, y+2)
         (a, b, c) = (
-                1.7320508075688774 -- 2 cos (pi / 6) =  2 sin (2 pi / 6)
+                  1.7320508075688774 -- 2 cos (pi / 6) =  2 sin (2 pi / 6)
                 , 1 -- 2 cos (2 pi / 6) = 2 sin (pi / 6)
                 , 0.7071067811865476 -- cos (pi / 4) = sin (pi / 4)
             )
@@ -174,7 +174,7 @@ getCode Disk7 image pt@(Point x y) =
         (x1, x2, x3, x4, x5, x6) = (x-3, x-2, x-1, x+1, x+2, x+3)
         (y1, y2, y3, y4, y5, y6) = (y-3, y-2, y-1, y+1, y+2, y+3)
         (a, b, c) = (
-                2.598076211353316 -- 3 cos (pi / 6) =  3 sin (2 pi / 6)
+                  2.598076211353316 -- 3 cos (pi / 6) =  3 sin (2 pi / 6)
                 , 1.5 -- 3 cos (2 pi / 6) = 3 sin (pi / 6)
                 , 1.4142135623730951 -- 2 cos (pi / 4) = 2 sin (pi / 4)
             )

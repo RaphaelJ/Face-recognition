@@ -13,7 +13,7 @@ import Data.Array.Repa (
     )
 
 import qualified Vision.Image.IImage as I
-import Vision.Primitive (Point (..), DPoint, Size (..))
+import Vision.Primitive (Point (..), DPoint, Rect, Size (..))
 
 -- | RGBA image (y :. x :. channel).
 newtype RGBAImage = RGBAImage (Array D DIM3 Word8)
@@ -82,6 +82,7 @@ instance I.Pixel RGBAPixel Word8 where
 
 {-# SPECIALIZE I.unsafeBilinearInterpol :: RGBAImage -> DPoint -> RGBAPixel #-}
 {-# SPECIALIZE I.resize :: RGBAImage -> Size -> RGBAImage #-}
+{-# SPECIALIZE I.crop :: RGBAImage -> Rect -> RGBAImage #-}
 {-# SPECIALIZE I.horizontalFlip :: RGBAImage -> RGBAImage #-}
 
 -- | Returns the shape of an image of the given size.
