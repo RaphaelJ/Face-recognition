@@ -153,7 +153,7 @@ resize image size'@(Size w' h') =
     Size w h = getSize image
     widthRatio = double w / double w'
     heightRatio = double h / double h'
-{-# INLINE resize #-} -- With INLINABLE, the function can be specialised.
+{-# INLINE resize #-}
 
 -- | Maps the content of the image\'s rectangle in a new image.
 crop :: Image i p a => i -> Rect -> i
@@ -164,7 +164,7 @@ crop image (Rect rx ry rw rh) =
        else error "Out of bounds rectangle"
   where
     Size w h = getSize image
-{-# INLINE crop #-} -- With INLINABLE, the function can be specialised.
+{-# INLINE crop #-}
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.
 drawRectangle :: Image i p a => i

@@ -16,6 +16,7 @@ library
                      AI.Learning.Classifier
                      AI.Learning.DecisionStump
                      -- AI.Learning.KMeans
+                     Data.List.Shuffle
                      Vision.Haar.Cascade
                      Vision.Haar.Classifier
                      Vision.Haar.Detector
