@@ -74,7 +74,8 @@ train directory savePath = do
     -- from the good/ directory.
     loadGood = do
         -- Loads and resizes each image to the detection window\'s size.
-        let resize i = I.force $ I.resize i (Size windowWidth windowHeight)
+        let size = Size windowWidth windowHeight
+            resize i = I.force $ I.resize I.Bilinear i size
         imgs <- map resize `fmap` loadImages (directory </> "good")
 
         -- Computes the horizontal mirror for each valid image.

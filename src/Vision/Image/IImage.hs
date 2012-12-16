@@ -8,8 +8,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Vision.Image.IImage (
-    -- * Types classes
-      Image (..), Pixel (..), StorableImage (..), Convertible (..)
+    -- * Types and classes
+      InterpolMethod (..), Image (..), Pixel (..), StorableImage (..)
+    , Convertible (..)
     -- * Functions
     , convert, inImage, bilinearInterpol, unsafeBilinearInterpol
     -- * Misc images transformations
@@ -24,6 +25,9 @@ import Vision.Primitive (
     )
 
 import qualified Data.Array.Repa.IO.DevIL as IL
+
+-- | Defines the set of possible methods for pixel interpolations.
+data InterpolMethod = NearestNeighbor | Bilinear
 
 -- | The 'Image' class represents images with pixels of type 'p' which contains
 -- values of type 'a'.
@@ -142,9 +146,9 @@ image `unsafeBilinearInterpol` DPoint x y =
 {-# INLINE bilinearInterpol #-}
 {-# INLINABLE unsafeBilinearInterpol #-}
 
--- | Resizes the 'Image' using a bilinear interpolation.
-resize :: (Image i p a, Integral a) => i -> Size -> i
-resize image size'@(Size w' h') =
+-- | Resizes the 'Image' using the given interpolation method.
+resize :: (Image i p a, Integral a) => InterpolMethod -> i -> Size -> i
+resize Bilinear image !size'@(Size w' h') =
     fromFunction size' $ \(Point x' y') ->
         let x = double x' * widthRatio
             y = double y' * heightRatio
@@ -153,17 +157,20 @@ resize image size'@(Size w' h') =
     Size w h = getSize image
     widthRatio = double w / double w'
     heightRatio = double h / double h'
+resize NearestNeighbor image !size'@(Size w' h') =
+    fromFunction size' $ \(Point x' y') ->
+        let x = x' * w `quot` w'
+            y = y' * h `quot` h'
+        in image `unsafeGetPixel` Point x y
+  where
+    Size w h = getSize image
 {-# INLINE resize #-}
 
 -- | Maps the content of the image\'s rectangle in a new image.
 crop :: Image i p a => i -> Rect -> i
-crop image (Rect rx ry rw rh) =
-    if rx >= 0 && ry >= 0 && rx + rw <= w && ry + rh <= h
-       then fromFunction (Size rw rh) $ \(Point x' y') ->
-                image `unsafeGetPixel` Point (rx + x') (ry + y')
-       else error "Out of bounds rectangle"
-  where
-    Size w h = getSize image
+crop image !(Rect rx ry rw rh) =
+    fromFunction (Size rw rh) $ \(Point x' y') ->
+        image `getPixel` Point (rx + x') (ry + y')
 {-# INLINE crop #-}
 
 -- | Draws a rectangle inside the 'IImage' using two transformation functions.

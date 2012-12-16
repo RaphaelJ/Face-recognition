@@ -81,7 +81,7 @@ instance I.Pixel RGBAPixel Word8 where
     {-# INLINE pixApply #-}
 
 {-# SPECIALIZE I.unsafeBilinearInterpol :: RGBAImage -> DPoint -> RGBAPixel #-}
-{-# SPECIALIZE I.resize :: RGBAImage -> Size -> RGBAImage #-}
+-- {-# SPECIALIZE I.resize :: RGBAImage -> Size -> RGBAImage #-}
 {-# SPECIALIZE I.crop :: RGBAImage -> Rect -> RGBAImage #-}
 {-# SPECIALIZE I.horizontalFlip :: RGBAImage -> RGBAImage #-}
 
