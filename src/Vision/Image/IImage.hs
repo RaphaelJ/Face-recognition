@@ -14,7 +14,7 @@ module Vision.Image.IImage (
     -- * Functions
     , convert, inImage, bilinearInterpol, unsafeBilinearInterpol
     -- * Misc images transformations
-    , resize, crop, drawRectangle, horizontalFlip
+    , resize, crop, drawRectangle, horizontalFlip, verticalFlip
     ) where
 
 import Data.Convertible (Convertible (..), convert)
@@ -206,6 +206,17 @@ horizontalFlip image =
     Size w _ = getSize image
     maxX = w - 1
 {-# INLINABLE horizontalFlip #-}
+
+-- | Reverses the image vertically.
+verticalFlip :: Image i p a => i -> i
+verticalFlip image =
+    fromFunction (getSize image) $ \(Point x y') ->
+        let y = maxY - y'
+        in image `unsafeGetPixel` Point x y
+  where
+    Size _ h = getSize image
+    maxY = h - 1
+{-# INLINABLE verticalFlip #-}
 
 double :: Integral a => a -> Double
 double = fromIntegral
